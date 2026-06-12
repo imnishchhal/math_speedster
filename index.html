@@ -78,6 +78,19 @@
             .form-row { grid-template-columns: 1fr 1fr; gap: 16px; }
             .metrics-grid { gap: 16px; }
         }
+        /* Mobile Specific View Optimization Rules For Financial Tracking Tables */
+        @media (max-width: 767px) {
+            /* Hide non-critical metadata on mobile screens to save space */
+            #panel-agents th:nth-child(2), #panel-agents td:nth-child(2),   /* Email */
+            #panel-agents th:nth-child(7), #panel-agents td:nth-child(7) {  /* Status Button */
+                display: none;
+            }
+            
+            /* Make text compact and clean on touchscreens */
+            table { font-size: 0.8rem; min-width: 100%; }
+            th, td { padding: 8px 4px; }
+            .btn-xs { padding: 6px 8px; font-size: 0.75rem; }
+        }
     </style>
 </head>
 <body>
