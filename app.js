@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, updateDoc, deleteDoc, collection, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
+import { getAuth, signInWithPopup, signInWithRedirect, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 // Your production Firebase cloud configuration matrix block
 const firebaseConfig = {
     apiKey: "AIzaSyD2j024emoJTfqfqjRcybS8Ip59qzx5cSs",
@@ -448,5 +448,91 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
-btnGoogleLogin.addEventListener('click', () => signInWithPopup(auth, provider));
-btnLogout.addEventListener('click', () => signOut(auth));
+// 10. PARENT PORTAL PORT LIMIT CHECK-IN LOGIC ENGINE
+const parentLoginForm = document.getElementById('parent-login-form');
+const parentPortalStatus = document.getElementById('parent-portal-status');
+
+if (parentLoginForm) {
+    parentLoginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const inputPhone = document.getElementById('parent-portal-phone').value.trim();
+        parentPortalStatus.style.display = "block";
+        parentPortalStatus.style.background = "#1e293b";
+        parentPortalStatus.style.color = "#94a3b8";
+        parentPortalStatus.innerHTML = "Searching database cluster... 🔍";
+
+        try {
+            // Construct the exact primary key layout structure matching our onboarding module
+            const targetParentKey = "parent_" + inputPhone;
+            
+            // Execute parallel lookups for speed optimization
+            const parentDocSnap = await getDoc(doc(db, "users", targetParentKey));
+            
+            if (!parentDocSnap.exists()) {
+                parentPortalStatus.style.background = "#7f1d1d";
+                parentPortalStatus.style.color = "#f87171";
+                parentPortalStatus.innerHTML = "❌ Number not found. Please ask your field agent to verify your registration.";
+                return;
+            }
+
+            // Query the student profile mapped to this parent profile index
+            const studentsQuerySnap = await getDocs(collection(db, "students"));
+            let matchingStudent = null;
+
+            studentsQuerySnap.forEach((doc) => {
+                const data = doc.data();
+                if (data.parentId === targetParentKey) {
+                    matchingStudent = { id: doc.id, ...data };
+                }
+            });
+
+            if (!matchingStudent) {
+                parentPortalStatus.style.background = "#7f1d1d";
+                parentPortalStatus.style.color = "#f87171";
+                parentPortalStatus.innerHTML = "❌ Account found, but no student profile is linked. Contact Admin.";
+                return;
+            }
+
+            // Success Verification Trigger! 
+            parentPortalStatus.style.background = "#065f46";
+            parentPortalStatus.style.color = "#34d399";
+            parentPortalStatus.innerHTML = `
+                <div style="font-weight:bold; font-size:1.1rem; margin-bottom:4px;">Welcome back, ${matchingStudent.name}! 👋</div>
+                <div style="font-size:0.85rem;">Class Level Locked: <strong>${matchingStudent.class}</strong></div>
+                <div style="margin-top:10px; font-size:0.9rem; color:#fff; font-weight:bold; text-transform:uppercase; animation: pulse 1.5s infinite;">
+                    Initializing Game Engines... 🚀
+                </div>
+            `;
+
+            // Session data payload block is ready for consumption by our game core modules!
+            console.log("Active Student Session Initialized Successfully:", matchingStudent);
+            
+            // NEXT STEP CONNECTOR: This is where we will call our game engine launch file sequence!
+
+        } catch (err) {
+            console.error("Parent check-in pipeline rejection:", err);
+            parentPortalStatus.style.background = "#7f1d1d";
+            parentPortalStatus.style.color = "#f87171";
+            parentPortalStatus.innerHTML = "Database communication exception error: " + err.message;
+        }
+    });
+}
+// 11. ADVANCED SECURITY GATEWAY PROFILE SIGN IN TRIGGERS
+// Optimized for seamless rendering across both desktop browsers and mobile touchscreens
+btnGoogleLogin.addEventListener('click', () => {
+    // Check if the agent is opening the portal on a mobile layout framework
+    if (window.innerWidth <= 767) {
+        // Safe fullscreen slide redirect for smooth native mobile execution
+        signInWithRedirect(auth, provider);
+    } else {
+        // Instant interactive breakout pop-up for widescreen laptops
+        signInWithPopup(auth, provider);
+    }
+});
+
+btnLogout.addEventListener('click', () => {
+    if (confirm("Are you sure you want to log out of the Math Speedster Command Engine?")) {
+        signOut(auth);
+    }
+});

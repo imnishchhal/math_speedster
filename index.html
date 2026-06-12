@@ -137,6 +137,7 @@
             <button class="tab-btn active" data-target="panel-records">📋 Student Records</button>
             <button class="tab-btn" data-target="panel-agents">💼 Hired Agents</button>
             <button class="tab-btn" data-target="panel-onboard">➕ Client Entry Form</button>
+            <button class="tab-btn" data-target="panel-parent-portal">👨‍👩‍👧 Parent Portal</button>
         </div>
 
         <!-- MODULE A: MANAGEMENT LEDGER TAB PANEL -->
@@ -247,7 +248,28 @@
                 </button>
             </form>
         </section>
-
+<!-- MODULE D: PUBLIC PARENT/STUDENT CHECK-IN PORTAL -->
+        <section id="panel-parent-portal" class="panel-card">
+            <div style="text-align: center; max-width: 420px; margin: 20px auto; padding: 10px;">
+                <div style="font-size: 3rem; margin-bottom: 10px;">🎮</div>
+                <h2 style="justify-content: center; margin-bottom: 8px; font-size: 1.4rem;">Student Game Arena</h2>
+                <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 24px;">Enter your registered 10-digit WhatsApp number to unlock your math challenges!</p>
+                
+                <form id="parent-login-form">
+                    <div style="margin-bottom: 16px; text-align: left;">
+                        <label for="parent-portal-phone" style="color: #38bdf8; font-weight: 600;">Registered Mobile Number</label>
+                        <input type="tel" id="parent-portal-phone" placeholder="e.g. 9876543210" pattern="[0-9]{10}" required 
+                               style="font-size: 1.2rem; padding: 14px; text-align: center; letter-spacing: 2px;">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; justify-content: center; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);">
+                        Start Playing! ⚡
+                    </button>
+                </form>
+                
+                <!-- Dynamic Response Status Alert Card -->
+                <div id="parent-portal-status" style="margin-top: 20px; padding: 12px; border-radius: 8px; display: none; font-size: 0.95rem;"></div>
+            </div>
+        </section>
     </div>
 
     <!-- MODULE EMBEDDED FOOTER CONTROLS CONFIGURATION STATUS PANEL -->
