@@ -170,18 +170,31 @@
         <!-- MODULE B: AGENT MANAGEMENT PERFORMANCE TRACKING GRID PANEL -->
         <section id="panel-agents" class="panel-card">
             <h2>Hired Field Operations Team Roster</h2>
+            
+            <div style="background: #1e293b; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #243249; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <span style="font-size: 0.9rem; color: #94a3b8;">Standard Payout Per Registered Family:</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="color: #10b981; font-weight: bold;">₹</span>
+                    <input type="number" id="config-commission-rate" value="50" style="width: 70px; padding: 4px 8px; margin-bottom: 0; text-align: center; font-weight: bold; color: #10b981;">
+                </div>
+            </div>
+
             <div class="table-overflow">
                 <table>
                     <thead>
                         <tr>
                             <th>Agent Profile Name</th>
                             <th>Registration Email</th>
-                            <th style="text-align: center;">Total Onboarded Leads</th>
+                            <th style="text-align: center;">Total Leads</th>
+                            <th style="color: #38bdf8;">Total Earned</th>
+                            <th style="color: #10b981;">Paid</th>
+                            <th style="color: #f59e0b;">Balance Due</th>
                             <th>Status Control Access</th>
+                            <th style="text-align: center;">Accounting Actions</th>
                         </tr>
                     </thead>
                     <tbody id="admin-table-agents-body">
-                        <tr><td colspan="4" style="text-align: center; color: #94a3b8;">Mapping operations database snapshots...</td></tr>
+                        <tr><td colspan="8" style="text-align: center; color: #94a3b8;">Mapping operations and commission snapshots...</td></tr>
                     </tbody>
                 </table>
             </div>

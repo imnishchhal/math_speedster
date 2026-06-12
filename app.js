@@ -241,14 +241,25 @@ function bindInteractiveRecordActionButtons() {
 }
 
 // 5. RENDER AGENT LIST AND CALCULATE COMMISSIONS / PERFORMANCE LEAD METRICS
+// 5. RENDER AGENT LIST AND CALCULATE COMMISSIONS / PERFORMANCE LEAD METRICS
 function renderAgentsManagementTable() {
     let rowsHTML = "";
+    
+    // Get the current commission rate set in the UI layout input field
+    const rateInput = document.getElementById('config-commission-rate');
+    const payoutRate = rateInput ? parseFloat(rateInput.value) || 0 : 50;
     
     Object.keys(cachedAgents).forEach(agentId => {
         const agent = cachedAgents[agentId];
         
-        // Count total leads onboarded by comparing agent UID against parent metadata files records
+        // Count total leads onboarded by comparing agent UID against parent metadata records
         const leadsCount = Object.values(cachedParents).filter(p => p.onboardedBy === agentId).length;
+        
+        // Extract financial parameters from database or default to zero
+        const totalEarned = leadsCount * payoutRate;
+        const totalPaid = agent.amountPaid || 0;
+        const balanceDue = totalEarned - totalPaid;
+        
         const currentStatus = agent.status || "Active";
         const statusClass = (currentStatus === "Active") ? "status-active" : "status-suspended";
 
@@ -257,9 +268,17 @@ function renderAgentsManagementTable() {
                 <td><strong>${agent.name}</strong></td>
                 <td>${agent.email}</td>
                 <td style="text-align:center; font-weight:bold; color:#f59e0b;">${leadsCount} families</td>
+                <td style="font-weight:600; color:#38bdf8;">₹${totalEarned}</td>
+                <td style="font-weight:600; color:#10b981;">₹${totalPaid}</td>
+                <td style="font-weight:600; color: ${balanceDue > 0 ? '#ef4444' : '#94a3b8'};">₹${balanceDue}</td>
                 <td>
                     <button class="switch-btn ${statusClass} btn-toggle-agent-status" data-id="${agentId}" data-status="${currentStatus}">
                         ${currentStatus}
+                    </button>
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn btn-primary btn-xs btn-record-payout" data-id="${agentId}" data-balance="${balanceDue}" ${balanceDue <= 0 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
+                        💸 Pay Agent
                     </button>
                 </td>
             </tr>
@@ -267,6 +286,15 @@ function renderAgentsManagementTable() {
     });
     
     agentsTableBody.innerHTML = rowsHTML;
+
+    // Bind event to recalculate values dynamically if the master admin updates the flat rate input box
+    const rateInputEl = document.getElementById('config-commission-rate');
+    if (rateInputEl && !rateInputEl.dataset.listenerAttached) {
+        rateInputEl.dataset.listenerAttached = true;
+        rateInputEl.addEventListener('input', () => {
+            renderAgentsManagementTable();
+        });
+    }
 
     // Bind agent access control block toggles
     document.querySelectorAll('.btn-toggle-agent-status').forEach(btn => {
@@ -282,6 +310,40 @@ function renderAgentsManagementTable() {
                 } catch (err) {
                     console.error("Agent privilege update error:", err);
                 }
+            }
+        });
+    });
+
+    // Bind Payout Processing Trigger Buttons
+    document.querySelectorAll('.btn-record-payout').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const agentId = btn.getAttribute('data-id');
+            const balanceDue = parseFloat(btn.getAttribute('data-balance'));
+            
+            const payoutInput = prompt(`Enter the amount to settle for this agent (Max Balance Due: ₹${balanceDue}):`, balanceDue);
+            if (payoutInput === null) return; // Action cancelled by user
+            
+            const payoutAmount = parseFloat(payoutInput);
+            if (isNaN(payoutAmount) || payoutAmount <= 0 || payoutAmount > balanceDue) {
+                alert("Invalid Entry: Please enter a valid number greater than 0 and less than or equal to the balance due.");
+                return;
+            }
+
+            try {
+                const agent = cachedAgents[agentId];
+                const currentPaidSum = agent.amountPaid || 0;
+                const newPaidSum = currentPaidSum + payoutAmount;
+
+                // Update ledger profile in Firestore database
+                await updateDoc(doc(db, "agents", agentId), {
+                    amountPaid: newPaidSum,
+                    lastPaymentDate: new Date()
+                });
+
+                alert(`Payment Confirmed: Successfully recorded settlement of ₹${payoutAmount}. Ledger profile updated.`);
+                loadComprehensiveSystemData(); // Re-sync core dataset elements view
+            } catch (err) {
+                alert("Failed to commit transaction updates: " + err.message);
             }
         });
     });
