@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Math Speedster - Student Game Arena</title>
+    <style>
+        /* Modern Dark UI Core Design Palette */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: #0b0f19; color: #f1f5f9; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 15px; }
+        
+        .portal-container { background: #111827; width: 100%; max-width: 450px; border-radius: 16px; border: 1px solid #1e293b; padding: 30px 20px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }
+        .screen-panel { display: none; }
+        .screen-panel.active { display: block; }
+        
+        /* Typography Elements */
+        h1 { font-size: 1.8rem; color: #f8fafc; text-align: center; margin-bottom: 8px; font-weight: 700; }
+        p.subtitle { color: #94a3b8; font-size: 0.95rem; text-align: center; margin-bottom: 25px; line-height: 1.4; }
+        
+        /* Form Control Layouts */
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; color: #38bdf8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+        input[type="tel"] { width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 14px; font-size: 1.3rem; color: #fff; text-align: center; letter-spacing: 3px; outline: none; transition: border-color 0.2s; }
+        input[type="tel"]:focus { border-color: #38bdf8; }
+        
+        /* Button UI Styles */
+        .btn { width: 100%; display: flex; justify-content: center; align-items: center; padding: 14px; font-size: 1.1rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
+        .btn-primary { background: #0284c7; color: #fff; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25); }
+        .btn-primary:hover { background: #0369a1; }
+        .btn-danger { background: transparent; border: 1px solid #ef4444; color: #ef4444; margin-top: 20px; font-size: 0.85rem; padding: 8px; }
+        
+        /* Status Feedback Cards */
+        .status-alert { margin-top: 15px; padding: 12px; border-radius: 8px; display: none; font-size: 0.95rem; text-align: center; line-height: 1.4; }
+        
+        /* Game Arena Specific Layout Styles */
+        .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #1e293b; padding: 10px 14px; border-radius: 8px; border: 1px solid #334155; font-size: 0.9rem; }
+        #game-player-tag { color: #38bdf8; font-weight: bold; }
+        #game-timer-clock { color: #10b981; font-weight: bold; font-size: 1.1rem; }
+        #game-score-counter { color: #10b981; font-weight: bold; }
+        
+        .question-display-box { background: #090d16; padding: 35px 15px; border-radius: 12px; border: 2px dashed #334155; margin-bottom: 25px; min-height: 150px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: border-color 0.15s; }
+        #visual-emoji-display { font-size: 3rem; letter-spacing: 6px; margin-bottom: 12px; min-height: 4rem; display: flex; align-items: center; justify-content: center; }
+        #visual-text-prompt { font-size: 1rem; color: #94a3b8; }
+        
+        .arcade-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .arcade-key { background: #1e293b; border: 1px solid #334155; color: #f8fafc; font-size: 2rem; font-weight: 700; padding: 18px 0; border-radius: 10px; cursor: pointer; transition: background 0.1s; display: flex; justify-content: center; align-items: center; }
+        .arcade-key:active { background: #334155; }
+    </style>
+</head>
+<body>
+
+    <div class="portal-container">
+        
+        <!-- PANEL A: PARENT CHECK-IN GATEWAY -->
+        <section id="panel-login" class="screen-panel active">
+            <div style="text-align: center; font-size: 3rem; margin-bottom: 10px;">⚡</div>
+            <h1>Math Speedster</h1>
+            <p class="subtitle">Enter your registered 10-digit WhatsApp number to unlock your game arena!</p>
+            
+            <form id="parent-login-form">
+                <div class="form-group">
+                    <label for="parent-portal-phone">Mobile Number</label>
+                    <input type="tel" id="parent-portal-phone" placeholder="9876543210" pattern="[0-9]{10}" required autocomplete="off">
+                </div>
+                <button type="submit" class="btn btn-primary">Start Playing! 🎮</button>
+            </form>
+            <div id="parent-portal-status" class="status-alert"></div>
+        </section>
+
+        <!-- PANEL B: LIVE INTERACTIVE GAME ARENA -->
+        <section id="panel-game" class="screen-panel">
+            <div class="game-header">
+                <span id="game-player-tag">Player: ---</span>
+                <span id="game-timer-clock">⏱️ 30s</span>
+                <span id="game-score-counter">Score: 0</span>
+            </div>
+
+            <div class="question-display-box" id="game-question-box">
+                <div id="visual-emoji-display">🍏 🍏 🍏</div>
+                <div id="visual-text-prompt">How many items do you see?</div>
+            </div>
+
+            <div class="arcade-keypad">
+                <button class="arcade-key" data-val="1">1</button>
+                <button class="arcade-key" data-val="2">2</button>
+                <button class="arcade-key" data-val="3">3</button>
+                <button class="arcade-key" data-val="4">4</button>
+                <button class="arcade-key" data-val="5">5</button>
+                <button class="arcade-key" data-val="6">6</button>
+            </div>
+            
+            <button id="btn-abort-game" class="btn btn-danger">🚪 Quit Session</button>
+        </section>
+
+    </div>
+
+    <!-- Firebase SDK Modules Layout Systems Pipeline -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, getDocs, collection, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Core Live Database Link Configurations Layout
+        const firebaseConfig = {
+            authDomain: "math-speed-web.firebaseapp.com",
+            projectId: "math-speed-web",
+            storageBucket: "math-speed-web.appspot.com",
+            messagingSenderId: "360693593368",
+            appId: "1:360693593368:web:b1df8fcf0df1ffb79930f3"
+        };
+
+        // If you host directly on Firebase or use an absolute database link structure, fallback configurations apply
+        const activeConfig = (window.location.hostname.includes("github.io")) 
+            ? { ...firebaseConfig, databaseURL: "https://math-speed-web-default-rtdb.asia-southeast1.firebasedatabase.app" }
+            : firebaseConfig;
+
+        const app = initializeApp(activeConfig);
+        const db = getFirestore(app);
+
+        // UI View Element Access Pointers
+        const panelLogin = document.getElementById('panel-login');
+        const panelGame = document.getElementById('panel-game');
+        const parentLoginForm = document.getElementById('parent-login-form');
+        const parentPortalStatus = document.getElementById('parent-portal-status');
+        
+        const gamePlayerTag = document.getElementById('game-player-tag');
+        const gameTimerClock = document.getElementById('game-timer-clock');
+        const gameScoreCounter = document.getElementById('game-score-counter');
+        const visualEmojiDisplay = document.getElementById('visual-emoji-display');
+        const gameQuestionBox = document.getElementById('game-question-box');
+        const btnAbortGame = document.getElementById('btn-abort-game');
+
+        // Runtime Engine Core Global Track Variables
+        let activeStudent = null;
+        let gameTimerInterval = null;
+        let currentCorrectAnswer = 0;
+        let currentSessionScore = 0;
+        let secondsRemaining = 30;
+        const assetSprites = ["🍏", "⭐", "🎈", "🚗", "🧸", "🐱", "🍦", "🍕", "🤖"];
+
+        // 1. LOOKUP AND VERIFY PLAYER PROFILE
+        parentLoginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const inputPhone = document.getElementById('parent-portal-phone').value.trim();
+            
+            parentPortalStatus.style.display = "block";
+            parentPortalStatus.style.background = "#1e293b";
+            parentPortalStatus.style.color = "#94a3b8";
+            parentPortalStatus.innerHTML = "Searching Arena Database... 🔍";
+
+            try {
+                const targetParentKey = "parent_" + inputPhone;
+                const parentDocSnap = await getDoc(doc(db, "users", targetParentKey));
+                
+                if (!parentDocSnap.exists()) {
+                    showLoginError("❌ Profile not found. Please verify with your Field Agent.");
+                    return;
+                }
+
+                // Retrieve Linked Student Record Array
+                const studentsQuerySnap = await getDocs(collection(db, "students"));
+                let matchingStudent = null;
+
+                studentsQuerySnap.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.parentId === targetParentKey) {
+                        matchingStudent = { id: doc.id, ...data };
+                    }
+                });
+
+                if (!matchingStudent) {
+                    showLoginError("❌ No student profile is linked to this account.");
+                    return;
+                }
+
+                // Render Success State Notification Card
+                parentPortalStatus.style.background = "#065f46";
+                parentPortalStatus.style.color = "#34d399";
+                parentPortalStatus.innerHTML = `Welcome back, <strong>${matchingStudent.name}</strong>! 👋<br>Initializing Game Engines... 🚀`;
+
+                setTimeout(() => {
+                    launchActiveGameSession(matchingStudent);
+                }, 1500);
+
+            } catch (err) {
+                showLoginError("Connection Error: " + err.message);
+            }
+        });
+
+        function showLoginError(msg) {
+            parentPortalStatus.style.background = "#7f1d1d";
+            parentPortalStatus.style.color = "#f87171";
+            parentPortalStatus.innerHTML = msg;
+        }
+
+        // 2. RUN GAME CONTEXT TIMER TIMELINE
+        function launchActiveGameSession(studentProfile) {
+            activeStudent = studentProfile;
+            currentSessionScore = 0;
+            secondsRemaining = 30;
+            
+            panelLogin.classList.remove('active');
+            panelGame.classList.add('active');
+            
+            gamePlayerTag.innerText = `Player: ${activeStudent.name}`;
+            gameScoreCounter.innerText = `Score: 0`;
+            gameTimerClock.innerText = `⏱️ 30s`;
+            gameTimerClock.style.color = "#10b981";
+
+            generateNextQuestion();
+
+            clearInterval(gameTimerInterval);
+            gameTimerInterval = setInterval(() => {
+                secondsRemaining--;
+                gameTimerClock.innerText = `⏱️ ${secondsRemaining}s`;
+                if (secondsRemaining <= 10) gameTimerClock.style.color = "#ef4444";
+                if (secondsRemaining <= 0) finalizeGameSession(false);
+            }, 1000);
+        }
+
+        // 3. GENERATE VISUAL SUBITIZING ALGEBRA TARGETS
+        function generateNextQuestion() {
+            currentCorrectAnswer = Math.floor(Math.random() * 6) + 1;
+            const randomSprite = assetSprites[Math.floor(Math.random() * assetSprites.length)];
+            visualEmojiDisplay.innerText = randomSprite.repeat(currentCorrectAnswer);
+        }
+
+        // 4. CAPTURE KEYPAD PRESS TOUCH CONTEXT INTERACTION
+        document.querySelectorAll('.arcade-key').forEach(key => {
+            key.addEventListener('click', () => {
+                if (!activeStudent || secondsRemaining <= 0) return;
+                const userChoice = parseInt(key.getAttribute('data-val'));
+
+                if (userChoice === currentCorrectAnswer) {
+                    currentSessionScore++;
+                    gameScoreCounter.innerText = `Score: ${currentSessionScore}`;
+                    flashFeedback("#10b981");
+                    generateNextQuestion();
+                } else {
+                    flashFeedback("#ef4444");
+                }
+            });
+        });
+
+        function flashFeedback(color) {
+            gameQuestionBox.style.borderColor = color;
+            setTimeout(() => { gameQuestionBox.style.borderColor = "#334155"; }, 150);
+        }
+
+        // 5. ATOMIC COMMIT METRICS TRACK TO DELHIFIRESTORE ARRAY
+        async function finalizeGameSession(wasAborted = false) {
+            clearInterval(gameTimerInterval);
+            if (!activeStudent) return;
+
+            if (wasAborted) {
+                alert("Session closed. Current score stats dropped.");
+            } else {
+                alert(`🏁 Time's Up! Tremendous performance! You scored ${currentSessionScore} points.`);
+                try {
+                    const trackingArray = activeStudent.mathSpeedScores || [];
+                    trackingArray.push(parseInt(currentSessionScore));
+
+                    await updateDoc(doc(db, "students", activeStudent.id), {
+                        mathSpeedScores: trackingArray
+                    });
+                    console.log("Cloud Database Metrics Synced Successfully.");
+                } catch (err) {
+                    console.error("Firestore Upload Sync Exception Failure:", err);
+                }
+            }
+
+            // Return to Pure Clean Main Screen State
+            activeStudent = null;
+            panelGame.classList.remove('active');
+            panelLogin.classList.add('active');
+            parentPortalStatus.style.display = "none";
+            parentLoginForm.reset();
+        }
+
+        btnAbortGame.addEventListener('click', () => finalizeGameSession(true));
+    </script>
+</body>
+</html>
