@@ -1,0 +1,390 @@
+// Import modules from the core Firebase Web Delivery Stack 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, updateDoc, deleteDoc, collection, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// Your production Firebase cloud configuration matrix block
+const firebaseConfig = {
+    apiKey: "AIzaSyD2j024emoJTfqfqjRcybS8Ip59qzx5cSs",
+    authDomain: "math-speed-web.firebaseapp.com",
+    projectId: "math-speed-web",
+    storageBucket: "math-speed-web.firebasestorage.app",
+    messagingSenderId: "601738228699",
+    appId: "1:601738228699:web:741dafc734dd2afb4a2dfe",
+    measurementId: "G-PZYC6KSHK2"
+};
+
+// Fire up client state engine modules
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+// CONFIGURATION: Set your exact system email account right here
+const MASTER_ADMIN_EMAIL = "kumarnishchhal175@gmail.com"; 
+
+// Memory cache array stores to support realtime instant filter operations without re-querying firebase
+let cachedStudents = [];
+let cachedParents = {};
+let cachedAgents = {};
+
+// DOM Layout Container Pointers
+const authSection = document.getElementById('auth-section');
+const workspaceContainer = document.getElementById('workspace-container');
+const adminTabsNav = document.getElementById('admin-tabs-nav');
+const systemConfigFooter = document.getElementById('system-config-footer');
+
+// Modular Tab Screen View Panel Blocks Pointers
+const panelRecords = document.getElementById('panel-records');
+const panelAgents = document.getElementById('panel-agents');
+const panelOnboard = document.getElementById('panel-onboard');
+
+// Form Input Fields Elements Pointers
+const onboardForm = document.getElementById('onboard-form');
+const filterSearchInput = document.getElementById('filter-search-input');
+const filterClassDropdown = document.getElementById('filter-class-dropdown');
+
+// Dynamic Text Elements and Tables Targets
+const userStatus = document.getElementById('user-status');
+const recordsTableBody = document.getElementById('admin-table-records-body');
+const agentsTableBody = document.getElementById('admin-table-agents-body');
+const statTotalStudents = document.getElementById('stat-total-students');
+const statTotalAgents = document.getElementById('stat-total-agents');
+const statTotalRuns = document.getElementById('stat-total-runs');
+
+// Action Trigger Button Pointers
+const btnGoogleLogin = document.getElementById('btn-google-login');
+const btnLogout = document.getElementById('btn-logout');
+const btnExportCSV = document.getElementById('btn-export-csv');
+
+// 1. MONITOR CORE USER SECURITY AND ACCESS LEVELS
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        // Run a verification lookup check on the incoming user against the database block blacklist rules
+        const agentDocRef = doc(db, "agents", user.uid);
+        const agentCheck = await getDoc(agentDocRef);
+        
+        if (agentCheck.exists() && agentCheck.data().status === "Suspended" && user.email.toLowerCase() !== MASTER_ADMIN_EMAIL.toLowerCase()) {
+            alert("Administrative Notification: This agent account access authorization has been suspended.");
+            signOut(auth);
+            return;
+        }
+
+        authSection.classList.remove('visible');
+        workspaceContainer.style.display = 'block';
+        btnLogout.style.display = 'inline-block';
+
+        // Auto write profile state into internal systems register database catalog
+        await setDoc(agentDocRef, {
+            name: user.displayName || "Field Staff Personnel",
+            email: user.email,
+            lastActive: new Date()
+        }, { merge: true });
+
+        // CORE ACCESS ROUTING EVALUATOR RULE ENGINE
+        if (user.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
+            userStatus.innerHTML = `<strong>${user.displayName || 'Master'}</strong> <span class="badge badge-success">👑 ADMIN CONSOLE</span>`;
+            adminTabsNav.style.display = 'flex';
+            systemConfigFooter.style.display = 'block';
+            loadComprehensiveSystemData();
+        } else {
+            userStatus.innerHTML = `<strong>${user.displayName || 'Agent'}</strong> <span class="badge badge-info">💼 FIELD OPERATIONS</span>`;
+            adminTabsNav.style.display = 'none'; // Lock away navigation selection options from general field agents
+            systemConfigFooter.style.display = 'none';
+            switchActiveTabPanel('panel-onboard'); // Route field agent straight to onboarding form view
+        }
+    } else {
+        userStatus.innerText = "Security System Access: Logged Out Pin Status.";
+        authSection.classList.add('visible');
+        workspaceContainer.style.display = 'none';
+        btnLogout.style.display = 'none';
+        systemConfigFooter.style.display = 'none';
+    }
+});
+
+// 2. FETCH EVERY RECORD CONCURRENTLY AND LOAD COUNTERS
+async function loadComprehensiveSystemData() {
+    try {
+        recordsTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Streaming database ledger tables...</td></tr>';
+        
+        const [studentsSnap, usersSnap, agentsSnap] = await Promise.all([
+            getDocs(collection(db, "students")),
+            getDocs(collection(db, "users")),
+            getDocs(collection(db, "agents"))
+        ]);
+
+        // Reset memory data stores lists
+        cachedStudents = [];
+        cachedParents = {};
+        cachedAgents = {};
+
+        usersSnap.forEach(doc => { cachedParents[doc.id] = { id: doc.id, ...doc.data() }; });
+        agentsSnap.forEach(doc => { cachedAgents[doc.id] = { id: doc.id, ...doc.data() }; });
+        studentsSnap.forEach(doc => { cachedStudents.push({ id: doc.id, ...doc.data() }); });
+
+        // Update top analytical counter summary panels
+        statTotalStudents.innerText = cachedStudents.length;
+        statTotalAgents.innerText = Object.keys(cachedAgents).length;
+        
+        let aggregateRuns = 0;
+        cachedStudents.forEach(s => { if (s.mathSpeedScores) aggregateRuns += s.mathSpeedScores.length; });
+        statTotalRuns.innerText = aggregateRuns;
+
+        // Populate system panels layout contents
+        renderSystemRecordsTable(cachedStudents);
+        renderAgentsManagementTable();
+
+    } catch (err) {
+        console.error("Central master collection read exception:", err);
+    }
+}
+
+// 3. RENDER THE STUDENT DB RECORDS LEDGER TABLE (WITH SEARCH / EDIT / DELETE ACTIONS)
+function renderSystemRecordsTable(studentsArray) {
+    let rowsHTML = "";
+    
+    if (studentsArray.length === 0) {
+        recordsTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #94a3b8;">No records match your filters.</td></tr>';
+        return;
+    }
+
+    studentsArray.forEach(student => {
+        const parent = cachedParents[student.parentId] || { name: "N/A", phone: "N/A", onboardedBy: "" };
+        const agent = cachedAgents[parent.onboardedBy] || { name: "Direct Portal" };
+        
+        // Compute maximum arithmetic performance speed score
+        const highscore = (student.mathSpeedScores && student.mathSpeedScores.length > 0) 
+            ? Math.max(...student.mathSpeedScores) 
+            : 0;
+
+        rowsHTML += `
+            <tr id="row-student-${student.id}">
+                <td><span id="txt-pname-${student.id}" style="font-weight:600;">${parent.name}</span></td>
+                <td><span id="txt-pphone-${student.id}">${parent.phone}</span></td>
+                <td><span id="txt-sname-${student.id}" style="color:#f8fafc;">${student.name}</span></td>
+                <td><span class="badge badge-info" id="txt-sclass-${student.id}">${student.class}</span></td>
+                <td style="color:#10b981; font-weight:bold; text-align:center;">${highscore}⚡</td>
+                <td style="color:#38bdf8;">${agent.name}</td>
+                <td style="text-align: center; min-width:160px;">
+                    <button class="btn btn-secondary btn-xs btn-edit-student" data-id="${student.id}" data-pid="${parent.id}">✏️ Edit</button>
+                    <button class="btn btn-danger btn-xs btn-delete-student" data-id="${student.id}" data-pid="${parent.id}" style="margin-left:4px;">🗑️ Del</button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    recordsTableBody.innerHTML = rowsHTML;
+    bindInteractiveRecordActionButtons();
+}
+
+// 4. INLINE EDITING AND ROW PURGE EVENT ATTACHMENTS 
+function bindInteractiveRecordActionButtons() {
+    // Attach inline data amendment triggers
+    document.querySelectorAll('.btn-edit-student').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const studentId = btn.getAttribute('data-id');
+            const parentId = btn.getAttribute('data-pid');
+            
+            if (btn.innerText === "✏️ Edit") {
+                // Flip text cells into textfields inputs controls
+                const parentNameSpan = document.getElementById(`txt-pname-${studentId}`);
+                const parentPhoneSpan = document.getElementById(`txt-pphone-${studentId}`);
+                const studentNameSpan = document.getElementById(`txt-sname-${studentId}`);
+                
+                parentNameSpan.innerHTML = `<input type="text" id="inp-pname-${studentId}" value="${parentNameSpan.innerText}" style="padding:4px; font-size:0.85rem;">`;
+                parentPhoneSpan.innerHTML = `<input type="text" id="inp-pphone-${studentId}" value="${parentPhoneSpan.innerText}" style="padding:4px; font-size:0.85rem;">`;
+                studentNameSpan.innerHTML = `<input type="text" id="inp-sname-${studentId}" value="${studentNameSpan.innerText}" style="padding:4px; font-size:0.85rem;">`;
+                
+                btn.innerText = "💾 Save";
+                btn.classList.replace('btn-secondary', 'btn-primary');
+            } else {
+                // Extract changes values and commit update modifications back down to Firestore
+                const editParentName = document.getElementById(`inp-pname-${studentId}`).querySelector('input').value;
+                const editParentPhone = document.getElementById(`inp-pphone-${studentId}`).querySelector('input').value;
+                const editStudentName = document.getElementById(`inp-sname-${studentId}`).querySelector('input').value;
+
+                try {
+                    await updateDoc(doc(db, "students", studentId), { name: editStudentName });
+                    await updateDoc(doc(db, "users", parentId), { name: editParentName, phone: editParentPhone });
+                    
+                    btn.innerText = "✏️ Edit";
+                    btn.classList.replace('btn-primary', 'btn-secondary');
+                    loadComprehensiveSystemData(); // Re-sync view elements 
+                } catch (err) {
+                    alert("Database write validation exception rejection: " + err.message);
+                }
+            }
+        });
+    });
+
+    // Attach inline data purge/delete execution actions trigger loops
+    document.querySelectorAll('.btn-delete-student').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const studentId = btn.getAttribute('data-id');
+            const parentId = btn.getAttribute('data-pid');
+            
+            if (confirm("Security Warning: Are you absolutely sure you want to permanently delete this student record profile? This cannot be undone.")) {
+                try {
+                    await deleteDoc(doc(db, "students", studentId));
+                    // Check if parent has any other kids registered before wiping their account completely
+                    const checkOtherKids = cachedStudents.filter(s => s.parentId === parentId && s.id !== studentId);
+                    if (checkOtherKids.length === 0) {
+                        await deleteDoc(doc(db, "users", parentId));
+                    }
+                    loadComprehensiveSystemData();
+                } catch (err) {
+                    alert("Delete execution error: " + err.message);
+                }
+            }
+        });
+    });
+}
+
+// 5. RENDER AGENT LIST AND CALCULATE COMMISSIONS / PERFORMANCE LEAD METRICS
+function renderAgentsManagementTable() {
+    let rowsHTML = "";
+    
+    Object.keys(cachedAgents).forEach(agentId => {
+        const agent = cachedAgents[agentId];
+        
+        // Count total leads onboarded by comparing agent UID against parent metadata files records
+        const leadsCount = Object.values(cachedParents).filter(p => p.onboardedBy === agentId).length;
+        const currentStatus = agent.status || "Active";
+        const statusClass = (currentStatus === "Active") ? "status-active" : "status-suspended";
+
+        rowsHTML += `
+            <tr>
+                <td><strong>${agent.name}</strong></td>
+                <td>${agent.email}</td>
+                <td style="text-align:center; font-weight:bold; color:#f59e0b;">${leadsCount} families</td>
+                <td>
+                    <button class="switch-btn ${statusClass} btn-toggle-agent-status" data-id="${agentId}" data-status="${currentStatus}">
+                        ${currentStatus}
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    agentsTableBody.innerHTML = rowsHTML;
+
+    // Bind agent access control block toggles
+    document.querySelectorAll('.btn-toggle-agent-status').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const agentId = btn.getAttribute('data-id');
+            const currentStatus = btn.getAttribute('data-status');
+            const nextStatus = (currentStatus === "Active") ? "Suspended" : "Active";
+            
+            if (confirm(`Change authorization access for this staff agent to ${nextStatus}?`)) {
+                try {
+                    await updateDoc(doc(db, "agents", agentId), { status: nextStatus });
+                    loadComprehensiveSystemData();
+                } catch (err) {
+                    console.error("Agent privilege update error:", err);
+                }
+            }
+        });
+    });
+}
+
+// 6. CLIENT SEARCH ENGINE SUBROUTINE FILTER LOGIC LOOP
+function executeLiveLocalFilteringSearch() {
+    const query = filterSearchInput.value.toLowerCase();
+    const classFilter = filterClassDropdown.value;
+
+    const filteredList = cachedStudents.filter(student => {
+        const parent = cachedParents[student.parentId] || { name: "", phone: "" };
+        const matchText = student.name.toLowerCase().includes(query) || 
+                          parent.name.toLowerCase().includes(query) || 
+                          parent.phone.includes(query);
+        const matchClass = classFilter === "" || student.class === classFilter;
+        return matchText && matchClass;
+    });
+
+    renderSystemRecordsTable(filteredList);
+}
+filterSearchInput.addEventListener('input', executeLiveLocalFilteringSearch);
+filterClassDropdown.addEventListener('change', executeLiveLocalFilteringSearch);
+
+// 7. FORM SUBMISSION WORKFLOW HANDLING FOR AGENTS & ADMIN
+onboardForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const agent = auth.currentUser;
+    if (!agent) return alert("Security context missing.");
+
+    const pName = document.getElementById('form-parent-name').value;
+    const pPhone = document.getElementById('form-parent-phone').value;
+    const cName = document.getElementById('form-child-name').value;
+    const cClass = document.getElementById('form-child-class').value;
+
+    try {
+        const parentKey = "parent_" + pPhone;
+        const studentKey = "student_" + Date.now();
+
+        await setDoc(doc(db, "users", parentKey), {
+            name: pName,
+            phone: pPhone,
+            role: "parent",
+            onboardedBy: agent.uid,
+            createdAt: new Date()
+        });
+
+        await setDoc(doc(db, "students", studentKey), {
+            parentId: parentKey,
+            name: cName,
+            class: cClass,
+            createdAt: new Date(),
+            mathSpeedScores: []
+        });
+
+        alert(`Success! Onboarded ${cName}'s family under Phone ID: ${pPhone}`);
+        onboardForm.reset();
+
+        if (agent.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
+            loadComprehensiveSystemData();
+        }
+    } catch (err) {
+        alert("Transaction push failed error: " + err.message);
+    }
+});
+
+// 8. DATA PORTABILITY EXPORT UTILITY TO EXCEL/CSV SHEET
+btnExportCSV.addEventListener('click', () => {
+    if (cachedStudents.length === 0) return alert("Data registry vector empty.");
+    
+    let csvData = "Parent Name,WhatsApp Phone,Child Name,Class Level,High Score\n";
+    cachedStudents.forEach(s => {
+        const p = cachedParents[s.parentId] || { name: "N/A", phone: "N/A" };
+        const score = (s.mathSpeedScores && s.mathSpeedScores.length > 0) ? Math.max(...s.mathSpeedScores) : 0;
+        csvData += `"${p.name}","${p.phone}","${s.name}","${s.class}",${score}\n`;
+    });
+
+    const fileBlob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const downloadLink = document.createElement("a");
+    downloadLink.href = URL.createObjectURL(fileBlob);
+    downloadLink.setAttribute("download", `MathSpeedster_Records_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+});
+
+// 9. RE-USABLE TAB ROUTING INTERFACE CONTROLLER VIEW SWITCHER
+function switchActiveTabPanel(targetPanelId) {
+    document.querySelectorAll('.panel-card').forEach(p => p.classList.remove('visible'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    
+    const activeTarget = document.getElementById(targetPanelId);
+    if(activeTarget) activeTarget.classList.add('visible');
+    
+    const triggerBtn = document.querySelector(`[data-target="${targetPanelId}"]`);
+    if(triggerBtn) triggerBtn.classList.add('active');
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        switchActiveTabPanel(btn.getAttribute('data-target'));
+    });
+});
+
+btnGoogleLogin.addEventListener('click', () => signInWithPopup(auth, provider));
+btnLogout.addEventListener('click', () => signOut(auth));
