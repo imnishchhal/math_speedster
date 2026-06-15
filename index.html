@@ -148,14 +148,16 @@
             parentPortalStatus.innerHTML = "Searching Arena Database... 🔍";
 
             try {
-                const targetParentKey = "parent_" + inputPhone;
-                const parentDocSnap = await getDoc(doc(db, "users", targetParentKey));
-                
-                if (!parentDocSnap.exists()) {
-                    showLoginError("❌ Profile not found. Please verify with your Field Agent Or Send details on Whatsapp on 7800665883");
-                    return;
-                }
-
+    const targetParentKey = "parent_" + inputPhone;
+    const parentDocSnap = await getDoc(doc(db, "users", targetParentKey));
+    
+    if (!parentDocSnap.exists()) {
+        showLoginError("❌ Profile not found. Please verify with your Field Agent Or Send details on Whatsapp on 7800665883");
+        return;
+    }
+} catch (error) {
+    console.error("Database error:", error);
+}
                 // Retrieve Linked Student Record Array
                 const studentsQuerySnap = await getDocs(collection(db, "students"));
                 let matchingStudent = null;
