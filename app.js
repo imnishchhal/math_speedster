@@ -180,23 +180,19 @@ function renderSystemRecordsTable(studentsArray) {
         const gamesAborted = student.gamesAborted || 0;
 
         rowsHTML += `
-            <tr id="row-student-${student.id}">
-                <td><span id="txt-pname-${student.id}" style="font-weight:600;">${parent.name}</span></td>
-                <td><span id="txt-pphone-${student.id}">${parent.phone}</span></td>
-                <td><span id="txt-sname-${student.id}" style="color:#f8fafc;">${student.name}</span></td>
-                <td><span class="badge badge-info" id="txt-sclass-${student.id}">${student.class}</span></td>
-                <td style="color:#10b981; font-weight:bold; text-align:center;">👑 ${highestScore} pts</td>
-                <td style="color:#38bdf8; font-weight:bold; text-align:center;">⏱️ ${lastScore} pts</td>
-                <td style="text-align:center; color:#94a3b8;">
-                    <strong>${gamesCompleted + gamesAborted}</strong> times <br>
-                    <span style="font-size:0.75rem; color:#10b981;">(✅${gamesCompleted} Run / 🚪${gamesAborted} Left)</span>
-                </td>
-                <td style="text-align: center; min-width:160px;">
-                    <button class="btn btn-secondary btn-xs btn-edit-student" data-id="${student.id}" data-pid="${parent.id}">✏️ Edit</button>
-                    <button class="btn btn-danger btn-xs btn-delete-student" data-id="${student.id}" data-pid="${parent.id}" style="margin-left:4px;">🗑️ Del</button>
-                </td>
-            </tr>
-        `;
+    <tr id="row-student-${student.id}">
+        <td><span id="txt-pname-${student.id}" style="font-weight:600;">${parent.name}</span></td>
+        <td><span id="txt-pphone-${student.id}">${parent.phone}</span></td>
+        <td><span id="txt-sname-${student.id}" style="color:#f8fafc;">${student.name}</span></td>
+        <td><span class="badge badge-info" id="txt-sclass-${student.id}">${student.class}</span></td>
+        <td style="color:#10b981; font-weight:bold; text-align:center;">${highscore}⚡ <span style="color:#94a3b8; font-size:0.8rem; font-weight:normal;">(Last: ${lastScore})</span></td>
+        <td style="text-align:center; color:#e2e8f0; font-weight:600;">${completed + aborted} <span style="color:#64748b; font-size:0.75rem; font-weight:normal;">(Aborted: ${aborted})</span></td>
+        <td style="text-align: center;">
+            <button class="btn btn-secondary btn-xs btn-edit-student" data-id="${student.id}" data-pid="${parent.id}">✏️ Edit</button>
+            <button class="btn btn-danger btn-xs btn-delete-student" data-id="${student.id}" data-pid="${parent.id}" style="margin-left:4px;">🗑️ Del</button>
+        </td>
+    </tr>
+`;
     });
     
     recordsTableBody.innerHTML = rowsHTML;
