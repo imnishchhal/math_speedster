@@ -39,7 +39,7 @@
         #game-score-counter { color: #10b981; font-weight: bold; }
         
         .question-display-box { background: #090d16; padding: 35px 15px; border-radius: 12px; border: 2px dashed #334155; margin-bottom: 25px; min-height: 150px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: border-color 0.15s; }
-        #visual-emoji-display { font-size: 3rem; letter-spacing: 6px; margin-bottom: 12px; min-height: 4rem; display: flex; align-items: center; justify-content: center; }
+        #visual-emoji-display { font-size: 3rem; letter-spacing: 6px; margin-bottom: 12px; min-height: 4rem; display: flex; align-items: center; justify-content: center; user-select: none; }
         #visual-text-prompt { font-size: 1rem; color: #94a3b8; }
         
         .arcade-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -51,7 +51,6 @@
 
     <div class="portal-container">
         
-        <!-- PANEL A: PARENT CHECK-IN GATEWAY -->
         <section id="panel-login" class="screen-panel active">
             <div style="text-align: center; font-size: 3rem; margin-bottom: 10px;">⚡</div>
             <h1>Math Speedster</h1>
@@ -67,7 +66,6 @@
             <div id="parent-portal-status" class="status-alert"></div>
         </section>
 
-        <!-- PANEL B: LIVE INTERACTIVE GAME ARENA -->
         <section id="panel-game" class="screen-panel">
             <div class="game-header">
                 <span id="game-player-tag">Player: ---</span>
@@ -94,7 +92,6 @@
 
     </div>
 
-    <!-- Firebase SDK Modules Layout Systems Pipeline -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, getDoc, getDocs, collection, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -108,7 +105,6 @@
             appId: "1:360693593368:web:b1df8fcf0df1ffb79930f3"
         };
 
-        // If you host directly on Firebase or use an absolute database link structure, fallback configurations apply
         const activeConfig = (window.location.hostname.includes("github.io")) 
             ? { ...firebaseConfig, databaseURL: "https://math-speed-web-default-rtdb.asia-southeast1.firebasedatabase.app" }
             : firebaseConfig;
@@ -141,6 +137,7 @@
         parentLoginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const inputPhone = document.getElementById('parent-portal-phone').value.trim();
+            const targetParentKey = "parent_" + inputPhone;
             
             parentPortalStatus.style.display = "block";
             parentPortalStatus.style.background = "#1e293b";
@@ -148,16 +145,14 @@
             parentPortalStatus.innerHTML = "Searching Arena Database... 🔍";
 
             try {
-    const targetParentKey = "parent_" + inputPhone;
-    const parentDocSnap = await getDoc(doc(db, "users", targetParentKey));
-    
-    if (!parentDocSnap.exists()) {
-        showLoginError("❌ Profile not found. Please verify with your Field Agent Or Send details on Whatsapp on 7800665883");
-        return;
-    }
-} catch (error) {
-    console.error("Database error:", error);
-}
+                // Entire database flow nested inside try block to stop executions on failures cleanly
+                const parentDocSnap = await getDoc(doc(db, "users", targetParentKey));
+                
+                if (!parentDocSnap.exists()) {
+                    showLoginError("❌ Profile not found. Please verify with your Field Agent Or Send details on Whatsapp on 7800665883");
+                    return;
+                }
+
                 // Retrieve Linked Student Record Array
                 const studentsQuerySnap = await getDocs(collection(db, "students"));
                 let matchingStudent = null;
@@ -184,6 +179,7 @@
                 }, 1500);
 
             } catch (err) {
+                console.error("Database error details:", err);
                 showLoginError("Connection Error: " + err.message);
             }
         });
@@ -219,9 +215,10 @@
             }, 1000);
         }
 
-        // 3. GENERATE VISUAL SUBITIZING ALGEBRA TARGETS
+        // 3. GENERATE VISUAL NURSERY TARGETS (Range: 1 to 5)
         function generateNextQuestion() {
-            currentCorrectAnswer = Math.floor(Math.random() * 6) + 1;
+            // Strictly limits objects to a clean 1-5 range for foundational learners
+            currentCorrectAnswer = Math.floor(Math.random() * 5) + 1;
             const randomSprite = assetSprites[Math.floor(Math.random() * assetSprites.length)];
             visualEmojiDisplay.innerText = randomSprite.repeat(currentCorrectAnswer);
         }
@@ -248,7 +245,7 @@
             setTimeout(() => { gameQuestionBox.style.borderColor = "#334155"; }, 150);
         }
 
-        // 5. ATOMIC COMMIT METRICS TRACK TO DELHIFIRESTORE ARRAY
+        // 5. ATOMIC COMMIT METRICS TRACK TO CLOUD FIRESTORE ARRAY
         async function finalizeGameSession(wasAborted = false) {
             clearInterval(gameTimerInterval);
             if (!activeStudent) return;
@@ -259,6 +256,8 @@
                 alert(`🏁 Time's Up! Tremendous performance! You scored ${currentSessionScore} points.`);
                 try {
                     const trackingArray = activeStudent.mathSpeedScores || [];
+                    
+                    // Appending the score cleanly as a pure integer
                     trackingArray.push(parseInt(currentSessionScore));
 
                     await updateDoc(doc(db, "students", activeStudent.id), {
