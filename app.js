@@ -160,25 +160,24 @@ async function loadComprehensiveSystemData() {
     }
 }
 
-// 3. RENDER THE STUDENT DB RECORDS LEDGER TABLE (WITH ANALYTICS FIELD UPDATES)
+// 3. RENDER THE STUDENT DB RECORDS LEDGER TABLE (WITH INDIVIDUAL ANALYTICS COLUMNS)
 function renderSystemRecordsTable(studentsArray) {
     if (!recordsTableBody) return;
     let rowsHTML = "";
     
     if (studentsArray.length === 0) {
-        recordsTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #94a3b8;">No records match your filters.</td></tr>';
+        recordsTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #94a3b8;">No records match your filters.</td></tr>';
         return;
     }
 
     studentsArray.forEach(student => {
         const parent = cachedParents[student.parentId] || { name: "N/A", phone: "N/A", onboardedBy: "" };
-        const agent = cachedAgents[parent.onboardedBy] || { name: "Direct Portal" };
         
-        // Pull explicitly saved milestone fields
-        const highscore = student.highScore || 0;
+        // Extract precise historical performance fields
+        const highestScore = student.highScore || 0;
         const lastScore = student.lastScore || 0;
-        const completed = student.gamesCompleted || 0;
-        const aborted = student.gamesAborted || 0;
+        const gamesCompleted = student.gamesCompleted || 0;
+        const gamesAborted = student.gamesAborted || 0;
 
         rowsHTML += `
             <tr id="row-student-${student.id}">
@@ -186,8 +185,12 @@ function renderSystemRecordsTable(studentsArray) {
                 <td><span id="txt-pphone-${student.id}">${parent.phone}</span></td>
                 <td><span id="txt-sname-${student.id}" style="color:#f8fafc;">${student.name}</span></td>
                 <td><span class="badge badge-info" id="txt-sclass-${student.id}">${student.class}</span></td>
-                <td style="color:#10b981; font-weight:bold; text-align:center;">🏆${highscore} / ⏱️${lastScore}</td>
-                <td style="color:#38bdf8; text-align:center;">✅${completed} | 🚪${aborted}</td>
+                <td style="color:#10b981; font-weight:bold; text-align:center;">👑 ${highestScore} pts</td>
+                <td style="color:#38bdf8; font-weight:bold; text-align:center;">⏱️ ${lastScore} pts</td>
+                <td style="text-align:center; color:#94a3b8;">
+                    <strong>${gamesCompleted + gamesAborted}</strong> times <br>
+                    <span style="font-size:0.75rem; color:#10b981;">(✅${gamesCompleted} Run / 🚪${gamesAborted} Left)</span>
+                </td>
                 <td style="text-align: center; min-width:160px;">
                     <button class="btn btn-secondary btn-xs btn-edit-student" data-id="${student.id}" data-pid="${parent.id}">✏️ Edit</button>
                     <button class="btn btn-danger btn-xs btn-delete-student" data-id="${student.id}" data-pid="${parent.id}" style="margin-left:4px;">🗑️ Del</button>
@@ -199,7 +202,6 @@ function renderSystemRecordsTable(studentsArray) {
     recordsTableBody.innerHTML = rowsHTML;
     bindInteractiveRecordActionButtons();
 }
-
 // 4. INLINE EDITING AND ROW PURGE EVENT ATTACHMENTS 
 function bindInteractiveRecordActionButtons() {
     document.querySelectorAll('.btn-edit-student').forEach(btn => {
@@ -556,7 +558,7 @@ function launchActiveGameSession(studentProfile) {
     }, 1000);
 }
 
-// MATRIX GENERATOR LINK: Nursery, LKG, and UKG Multi-Syllabus Controller
+// MATRIX GENERATOR LINK: Multi-Syllabus Controller with Integrated Math Tables
 function generateNextQuestion() {
     if (!activeStudent || !visualEmojiDisplay) return;
 
@@ -565,34 +567,61 @@ function generateNextQuestion() {
     const textPrompt = document.getElementById('visual-text-prompt');
 
     if (studentClass === "nursery") {
+        // --- NURSERY: Quantities 1 to 5 ---
         currentCorrectAnswer = Math.floor(Math.random() * 5) + 1;
         visualEmojiDisplay.innerText = randomSprite.repeat(currentCorrectAnswer);
         if (textPrompt) textPrompt.innerText = "How many items do you see?";
 
     } else if (studentClass === "lkg") {
-        const starterNum = Math.floor(Math.random() * 14) + 1;
-        currentCorrectAnswer = starterNum + 1; 
-        visualEmojiDisplay.innerText = `${starterNum} ➔ ❓`;
-        if (textPrompt) textPrompt.innerText = `What number comes after ${starterNum}?`;
+        // --- LKG: Math Tables 1 to 6 & Sequences ---
+        // 50% chance to get a sequence question, 50% chance to get a table puzzle
+        if (Math.random() > 0.5) {
+            const starterNum = Math.floor(Math.random() * 14) + 1;
+            currentCorrectAnswer = starterNum + 1; 
+            visualEmojiDisplay.innerText = `${starterNum} ➔ ❓`;
+            if (textPrompt) textPrompt.innerText = `What number comes after ${starterNum}?`;
+        } else {
+            // Pick a random table factor from 1 to 6
+            const tableNum = Math.floor(Math.random() * 6) + 1;
+            const multiplier = Math.floor(Math.random() * 5) + 1; // Keep multipliers small for LKG (1 to 5)
+            currentCorrectAnswer = tableNum * multiplier;
+            
+            visualEmojiDisplay.innerText = `${tableNum} × ${multiplier} = ❓`;
+            if (textPrompt) textPrompt.innerText = `Complete the Table of ${tableNum}!`;
+        }
 
     } else if (studentClass === "ukg") {
-        const isAddition = Math.random() > 0.5;
-        const num1 = Math.floor(Math.random() * 5) + 1; 
-        const num2 = Math.floor(Math.random() * 4) + 1; 
-
-        if (isAddition) {
-            currentCorrectAnswer = num1 + num2;
-            visualEmojiDisplay.innerText = `${num1} + ${num2}`;
+        // --- UKG: Math Tables 1 to 10 & Core Math Operations ---
+        const gameChoice = Math.random();
+        
+        if (gameChoice < 0.4) {
+            // 40% Chance: Advanced Math Tables from 1 to 10
+            const tableNum = Math.floor(Math.random() * 10) + 1; // Tables 1 to 10
+            const multiplier = Math.floor(Math.random() * 10) + 1; // Full multiplier range 1 to 10
+            currentCorrectAnswer = tableNum * multiplier;
+            
+            visualEmojiDisplay.innerText = `${tableNum} × ${multiplier} = ❓`;
+            if (textPrompt) textPrompt.innerText = `Quick! What is ${tableNum} times ${multiplier}?`;
+            
         } else {
-            const maxNum = Math.max(num1, num2);
-            const minNum = Math.min(num1, num2);
-            currentCorrectAnswer = maxNum - minNum;
-            visualEmojiDisplay.innerText = `${maxNum} - ${minNum}`;
+            // 60% Chance: Addition or Subtraction Problems
+            const isAddition = Math.random() > 0.5;
+            const num1 = Math.floor(Math.random() * 9) + 1; 
+            const num2 = Math.floor(Math.random() * 9) + 1; 
+
+            if (isAddition) {
+                currentCorrectAnswer = num1 + num2;
+                visualEmojiDisplay.innerText = `${num1} + ${num2}`;
+            } else {
+                const maxNum = Math.max(num1, num2);
+                const minNum = Math.min(num1, num2);
+                currentCorrectAnswer = maxNum - minNum;
+                visualEmojiDisplay.innerText = `${maxNum} - ${minNum}`;
+            }
+            if (textPrompt) textPrompt.innerText = "Solve the puzzle as fast as you can!";
         }
-        if (textPrompt) textPrompt.innerText = "Solve the puzzle as fast as you can!";
     }
 }
-
 // CAPTURE KEYPAD CONTROLS
 document.querySelectorAll('.arcade-key').forEach(key => {
     key.addEventListener('click', () => {
