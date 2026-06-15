@@ -497,6 +497,8 @@ function showParentPortalError(msg) {
     parentPortalStatus.innerHTML = msg;
 }
 
+// 10. PARENT PORTAL ACCESS & RUNTIME ENVIRONMENT INITIALIZATION
+// Wrapped in a safety check so it doesn't crash your admin panel screen!
 if (parentLoginForm) {
     parentLoginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -543,7 +545,6 @@ if (parentLoginForm) {
                 </div>
             `;
 
-            // CRITICAL FIX HERE: Explicitly bound to the parameter call below
             setTimeout(() => {
                 launchActiveGameSession(matchingStudent);
             }, 1200);
@@ -554,7 +555,7 @@ if (parentLoginForm) {
         }
     });
 }
-
+/////////////////
 function launchActiveGameSession(studentProfile) {
     activeStudent = studentProfile; // Now fully active with correct document ID matching
     currentSessionScore = 0;
