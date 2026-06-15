@@ -20,10 +20,8 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-// CONFIGURATION: Set your exact system email account right here
 const MASTER_ADMIN_EMAIL = "kumarnishchhal175@gmail.com"; 
 
-// Memory cache array stores to support realtime instant filter operations without re-querying firebase
 let cachedStudents = [];
 let cachedParents = {};
 let cachedAgents = {};
@@ -34,17 +32,10 @@ const workspaceContainer = document.getElementById('workspace-container');
 const adminTabsNav = document.getElementById('admin-tabs-nav');
 const systemConfigFooter = document.getElementById('system-config-footer');
 
-// Modular Tab Screen View Panel Blocks Pointers
-const panelRecords = document.getElementById('panel-records');
-const panelAgents = document.getElementById('panel-agents');
-const panelOnboard = document.getElementById('panel-onboard');
-
-// Form Input Fields Elements Pointers
 const onboardForm = document.getElementById('onboard-form');
 const filterSearchInput = document.getElementById('filter-search-input');
 const filterClassDropdown = document.getElementById('filter-class-dropdown');
 
-// Dynamic Text Elements and Tables Targets
 const userStatus = document.getElementById('user-status');
 const recordsTableBody = document.getElementById('admin-table-records-body');
 const agentsTableBody = document.getElementById('admin-table-agents-body');
@@ -52,7 +43,6 @@ const statTotalStudents = document.getElementById('stat-total-students');
 const statTotalAgents = document.getElementById('stat-total-agents');
 const statTotalRuns = document.getElementById('stat-total-runs');
 
-// Action Trigger Button Pointers
 const btnGoogleLogin = document.getElementById('btn-google-login');
 const btnLogout = document.getElementById('btn-logout');
 const btnExportCSV = document.getElementById('btn-export-csv');
@@ -146,9 +136,13 @@ async function loadComprehensiveSystemData() {
         
         let aggregateRuns = 0;
         cachedStudents.forEach(s => {
-            const completed = parseInt(s.gamesCompleted) || 0;
-            const aborted = parseInt(s.gamesAborted) || 0;
-            aggregateRuns += (completed + aborted);
+            if (s.mathSpeedScores) {
+                aggregateRuns += s.mathSpeedScores.length;
+            } else {
+                const completed = parseInt(s.gamesCompleted) || 0;
+                const aborted = parseInt(s.gamesAborted) || 0;
+                aggregateRuns += (completed + aborted);
+            }
         });
         if (statTotalRuns) statTotalRuns.innerText = aggregateRuns;
 
@@ -160,44 +154,51 @@ async function loadComprehensiveSystemData() {
     }
 }
 
-// 3. RENDER THE STUDENT DB RECORDS LEDGER TABLE (WITH INDIVIDUAL ANALYTICS COLUMNS)
+// 3. RENDER THE STUDENT DB RECORDS LEDGER TABLE (RESTORED TO ORIGINAL NEAT DESIGN)
 function renderSystemRecordsTable(studentsArray) {
     if (!recordsTableBody) return;
     let rowsHTML = "";
     
     if (studentsArray.length === 0) {
-        recordsTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #94a3b8;">No records match your filters.</td></tr>';
+        recordsTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #94a3b8;">No records match your filters.</td></tr>';
         return;
     }
 
     studentsArray.forEach(student => {
         const parent = cachedParents[student.parentId] || { name: "N/A", phone: "N/A", onboardedBy: "" };
+        const agent = cachedAgents[parent.onboardedBy] || { name: "Direct Portal" };
         
-        // Extract precise historical performance fields
-        const highestScore = student.highScore || 0;
+        // SMART FALLBACK: Reads original arrays OR new system tracking variables seamlessly
+        let highscore = student.highScore || 0;
+        if (student.mathSpeedScores && student.mathSpeedScores.length > 0) {
+            highscore = Math.max(...student.mathSpeedScores, highscore);
+        }
+        
         const lastScore = student.lastScore || 0;
-        const gamesCompleted = student.gamesCompleted || 0;
-        const gamesAborted = student.gamesAborted || 0;
+        const completed = student.gamesCompleted || 0;
+        const aborted = student.gamesAborted || 0;
+        const totalPlayed = student.mathSpeedScores ? student.mathSpeedScores.length : (completed + aborted);
 
         rowsHTML += `
-    <tr id="row-student-${student.id}">
-        <td><span id="txt-pname-${student.id}" style="font-weight:600;">${parent.name}</span></td>
-        <td><span id="txt-pphone-${student.id}">${parent.phone}</span></td>
-        <td><span id="txt-sname-${student.id}" style="color:#f8fafc;">${student.name}</span></td>
-        <td><span class="badge badge-info" id="txt-sclass-${student.id}">${student.class}</span></td>
-        <td style="color:#10b981; font-weight:bold; text-align:center;">${highscore}⚡ <span style="color:#94a3b8; font-size:0.8rem; font-weight:normal;">(Last: ${lastScore})</span></td>
-        <td style="text-align:center; color:#e2e8f0; font-weight:600;">${completed + aborted} <span style="color:#64748b; font-size:0.75rem; font-weight:normal;">(Aborted: ${aborted})</span></td>
-        <td style="text-align: center;">
-            <button class="btn btn-secondary btn-xs btn-edit-student" data-id="${student.id}" data-pid="${parent.id}">✏️ Edit</button>
-            <button class="btn btn-danger btn-xs btn-delete-student" data-id="${student.id}" data-pid="${parent.id}" style="margin-left:4px;">🗑️ Del</button>
-        </td>
-    </tr>
-`;
+            <tr id="row-student-${student.id}">
+                <td><span id="txt-pname-${student.id}" style="font-weight:600;">${parent.name}</span></td>
+                <td><span id="txt-pphone-${student.id}">${parent.phone}</span></td>
+                <td><span id="txt-sname-${student.id}" style="color:#f8fafc;">${student.name}</span></td>
+                <td><span class="badge badge-info" id="txt-sclass-${student.id}">${student.class}</span></td>
+                <td style="color:#10b981; font-weight:bold; text-align:center;">${highscore}⚡ <span style="color:#94a3b8; font-size:0.8rem; font-weight:normal;">(Last: ${lastScore})</span></td>
+                <td style="color:#38bdf8; font-weight:bold; text-align:center;">${totalPlayed} <span style="color:#64748b; font-size:0.75rem; font-weight:normal;">(Aborted: ${aborted})</span></td>
+                <td style="text-align: center;">
+                    <button class="btn btn-secondary btn-xs btn-edit-student" data-id="${student.id}" data-pid="${parent.id}">✏️ Edit</button>
+                    <button class="btn btn-danger btn-xs btn-delete-student" data-id="${student.id}" data-pid="${parent.id}" style="margin-left:4px;">🗑️ Del</button>
+                </td>
+            </tr>
+        `;
     });
     
     recordsTableBody.innerHTML = rowsHTML;
     bindInteractiveRecordActionButtons();
 }
+
 // 4. INLINE EDITING AND ROW PURGE EVENT ATTACHMENTS 
 function bindInteractiveRecordActionButtons() {
     document.querySelectorAll('.btn-edit-student').forEach(btn => {
@@ -409,7 +410,8 @@ if (onboardForm) {
                 highScore: 0,
                 lastScore: 0,
                 gamesCompleted: 0,
-                gamesAborted: 0
+                gamesAborted: 0,
+                mathSpeedScores: [] // Keeps legacy compatibility intact
             });
 
             alert(`Success! Onboarded ${cName}'s family under Phone ID: ${pPhone}`);
@@ -432,7 +434,9 @@ if (btnExportCSV) {
         let csvData = "Parent Name,WhatsApp Phone,Child Name,Class Level,High Score,Last Score,Games Completed,Games Aborted\n";
         cachedStudents.forEach(s => {
             const p = cachedParents[s.parentId] || { name: "N/A", phone: "N/A" };
-            csvData += `"${p.name}","${p.phone}","${s.name}","${s.class}",${s.highScore || 0},${s.lastScore || 0},${s.gamesCompleted || 0},${s.gamesAborted || 0}\n`;
+            let high = s.highScore || 0;
+            if (s.mathSpeedScores && s.mathSpeedScores.length > 0) high = Math.max(...s.mathSpeedScores, high);
+            csvData += `"${p.name}","${p.phone}","${s.name}","${s.class}",${high},${s.lastScore || 0},${s.gamesCompleted || 0},${s.gamesAborted || 0}\n`;
         });
 
         const fileBlob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
@@ -517,6 +521,7 @@ if (parentLoginForm) {
                 </div>
             `;
 
+            // CRITICAL FIX HERE: Explicitly bound to the parameter call below
             setTimeout(() => {
                 launchActiveGameSession(matchingStudent);
             }, 1200);
@@ -529,7 +534,7 @@ if (parentLoginForm) {
 }
 
 function launchActiveGameSession(studentProfile) {
-    activeStudent = studentProfile;
+    activeStudent = studentProfile; // Now fully active with correct document ID matching
     currentSessionScore = 0;
     secondsRemaining = 30;
     
@@ -554,7 +559,7 @@ function launchActiveGameSession(studentProfile) {
     }, 1000);
 }
 
-// MATRIX GENERATOR LINK: Multi-Syllabus Controller with Integrated Math Tables
+// 3. GENERATE VISUAL / ARITHMETIC TARGETS WITH INTEGRATED TABLES
 function generateNextQuestion() {
     if (!activeStudent || !visualEmojiDisplay) return;
 
@@ -563,44 +568,33 @@ function generateNextQuestion() {
     const textPrompt = document.getElementById('visual-text-prompt');
 
     if (studentClass === "nursery") {
-        // --- NURSERY: Quantities 1 to 5 ---
         currentCorrectAnswer = Math.floor(Math.random() * 5) + 1;
         visualEmojiDisplay.innerText = randomSprite.repeat(currentCorrectAnswer);
         if (textPrompt) textPrompt.innerText = "How many items do you see?";
 
     } else if (studentClass === "lkg") {
-        // --- LKG: Math Tables 1 to 6 & Sequences ---
-        // 50% chance to get a sequence question, 50% chance to get a table puzzle
         if (Math.random() > 0.5) {
             const starterNum = Math.floor(Math.random() * 14) + 1;
             currentCorrectAnswer = starterNum + 1; 
             visualEmojiDisplay.innerText = `${starterNum} ➔ ❓`;
             if (textPrompt) textPrompt.innerText = `What number comes after ${starterNum}?`;
         } else {
-            // Pick a random table factor from 1 to 6
             const tableNum = Math.floor(Math.random() * 6) + 1;
-            const multiplier = Math.floor(Math.random() * 5) + 1; // Keep multipliers small for LKG (1 to 5)
+            const multiplier = Math.floor(Math.random() * 5) + 1; 
             currentCorrectAnswer = tableNum * multiplier;
-            
             visualEmojiDisplay.innerText = `${tableNum} × ${multiplier} = ❓`;
             if (textPrompt) textPrompt.innerText = `Complete the Table of ${tableNum}!`;
         }
 
     } else if (studentClass === "ukg") {
-        // --- UKG: Math Tables 1 to 10 & Core Math Operations ---
         const gameChoice = Math.random();
-        
         if (gameChoice < 0.4) {
-            // 40% Chance: Advanced Math Tables from 1 to 10
-            const tableNum = Math.floor(Math.random() * 10) + 1; // Tables 1 to 10
-            const multiplier = Math.floor(Math.random() * 10) + 1; // Full multiplier range 1 to 10
+            const tableNum = Math.floor(Math.random() * 10) + 1; 
+            const multiplier = Math.floor(Math.random() * 10) + 1; 
             currentCorrectAnswer = tableNum * multiplier;
-            
             visualEmojiDisplay.innerText = `${tableNum} × ${multiplier} = ❓`;
             if (textPrompt) textPrompt.innerText = `Quick! What is ${tableNum} times ${multiplier}?`;
-            
         } else {
-            // 60% Chance: Addition or Subtraction Problems
             const isAddition = Math.random() > 0.5;
             const num1 = Math.floor(Math.random() * 9) + 1; 
             const num2 = Math.floor(Math.random() * 9) + 1; 
@@ -618,6 +612,7 @@ function generateNextQuestion() {
         }
     }
 }
+
 // CAPTURE KEYPAD CONTROLS
 document.querySelectorAll('.arcade-key').forEach(key => {
     key.addEventListener('click', () => {
@@ -642,7 +637,7 @@ function flashFeedback(color) {
     }
 }
 
-// METRIC COMMIT SYSTEM: Highest Score, Last Score, and Game State Totals Tracking
+// METRIC COMMIT SYSTEM: Keeps array logs for admin counters while filling precise properties
 async function finalizeGameSession(wasAborted = false) {
     clearInterval(gameTimerInterval);
     if (!activeStudent) return;
@@ -650,6 +645,9 @@ async function finalizeGameSession(wasAborted = false) {
     let currentHigh = parseInt(activeStudent.highScore) || 0;
     let completedCount = parseInt(activeStudent.gamesCompleted) || 0;
     let abortedCount = parseInt(activeStudent.gamesAborted) || 0;
+    
+    // Maintain old system array length tracking compatibility
+    let legacyArray = activeStudent.mathSpeedScores || [];
 
     if (wasAborted) {
         abortedCount++;
@@ -664,6 +662,8 @@ async function finalizeGameSession(wasAborted = false) {
         }
     } else {
         completedCount++;
+        legacyArray.push(parseInt(currentSessionScore)); // Appends clean integer back to old list system
+
         if (currentSessionScore > currentHigh) {
             currentHigh = currentSessionScore;
             alert(`🏆 New High Score! Outstanding job! You scored ${currentSessionScore} points.`);
@@ -675,7 +675,8 @@ async function finalizeGameSession(wasAborted = false) {
             await updateDoc(doc(db, "students", activeStudent.id), {
                 highScore: currentHigh,
                 lastScore: parseInt(currentSessionScore),
-                gamesCompleted: completedCount
+                gamesCompleted: completedCount,
+                mathSpeedScores: legacyArray
             });
         } catch (err) {
             console.error("Firestore metrics upload failure:", err);
@@ -687,11 +688,13 @@ async function finalizeGameSession(wasAborted = false) {
     if (panelLogin) panelLogin.classList.add('active');
     if (parentPortalStatus) parentPortalStatus.style.display = "none";
     if (parentLoginForm) parentLoginForm.reset();
+    
+    // Automatically call live reload to refresh ledger instantly
+    loadComprehensiveSystemData();
 }
 
 if (btnAbortGame) btnAbortGame.addEventListener('click', () => finalizeGameSession(true));
 
-// 11. ADVANCED SECURITY GATEWAY PROFILE SIGN IN TRIGGERS
 if (btnGoogleLogin) {
     btnGoogleLogin.addEventListener('click', () => {
         if (window.innerWidth <= 767) {
