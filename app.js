@@ -201,43 +201,66 @@ function renderSystemRecordsTable(studentsArray) {
 
 // 4. INLINE EDITING AND ROW PURGE EVENT ATTACHMENTS 
 function bindInteractiveRecordActionButtons() {
+    // 1. ATTACH EDIT/SAVE CLICK HANDLERS
     document.querySelectorAll('.btn-edit-student').forEach(btn => {
         btn.addEventListener('click', async (e) => {
+            e.preventDefault(); // Stop any browser default jumps
             const studentId = btn.getAttribute('data-id');
             const parentId = btn.getAttribute('data-pid');
             
+            const parentNameSpan = document.getElementById(`txt-pname-${studentId}`);
+            const parentPhoneSpan = document.getElementById(`txt-pphone-${studentId}`);
+            const studentNameSpan = document.getElementById(`txt-sname-${studentId}`);
+
             if (btn.innerText === "✏️ Edit") {
-                const parentNameSpan = document.getElementById(`txt-pname-${studentId}`);
-                const parentPhoneSpan = document.getElementById(`txt-pphone-${studentId}`);
-                const studentNameSpan = document.getElementById(`txt-sname-${studentId}`);
-                
-                parentNameSpan.innerHTML = `<input type="text" id="inp-pname-${studentId}" value="${parentNameSpan.innerText}" style="padding:4px; font-size:0.85rem; width:100px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:4px;">`;
-                parentPhoneSpan.innerHTML = `<input type="text" id="inp-pphone-${studentId}" value="${parentPhoneSpan.innerText}" style="padding:4px; font-size:0.85rem; width:100px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:4px;">`;
-                studentNameSpan.innerHTML = `<input type="text" id="inp-sname-${studentId}" value="${studentNameSpan.innerText}" style="padding:4px; font-size:0.85rem; width:100px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:4px;">`;
+                // Flip text layers into active input fields directly
+                parentNameSpan.innerHTML = `<input type="text" id="inp-pname-${studentId}" value="${parentNameSpan.innerText.trim()}" style="padding:4px; font-size:0.85rem; width:110px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:4px;">`;
+                parentPhoneSpan.innerHTML = `<input type="text" id="inp-pphone-${studentId}" value="${parentPhoneSpan.innerText.trim()}" style="padding:4px; font-size:0.85rem; width:110px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:4px;">`;
+                studentNameSpan.innerHTML = `<input type="text" id="inp-sname-${studentId}" value="${studentNameSpan.innerText.trim()}" style="padding:4px; font-size:0.85rem; width:110px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:4px;">`;
                 
                 btn.innerText = "💾 Save";
                 btn.classList.replace('btn-secondary', 'btn-primary');
             } else {
-                const editParentName = document.getElementById(`inp-pname-${studentId}`).querySelector('input').value;
-                const editParentPhone = document.getElementById(`inp-pphone-${studentId}`).querySelector('input').value;
-                const editStudentName = document.getElementById(`inp-sname-${studentId}`).querySelector('input').value;
+                // CORRECTED EXTRACTORS: Target the inputs directly by their true IDs
+                const editParentName = document.getElementById(`inp-pname-${studentId}`).value.trim();
+                const editParentPhone = document.getElementById(`inp-pphone-${studentId}`).value.trim();
+                const editStudentName = document.getElementById(`inp-sname-${studentId}`).value.trim();
+
+                if (!editParentName || !editParentPhone || !editStudentName) {
+                    alert("Validation Failure: Operational fields cannot be left blank.");
+                    return;
+                }
 
                 try {
+                    btn.innerText = "⏳ Saving...";
+                    btn.style.opacity = "0.7";
+
+                    // Commit parallel updates down to the respective database clusters
                     await updateDoc(doc(db, "students", studentId), { name: editStudentName });
                     await updateDoc(doc(db, "users", parentId), { name: editParentName, phone: editParentPhone });
                     
+                    // Reset button view parameters and sync interface arrays
                     btn.innerText = "✏️ Edit";
                     btn.classList.replace('btn-primary', 'btn-secondary');
+                    btn.style.opacity = "1";
+                    
                     loadComprehensiveSystemData(); 
                 } catch (err) {
+                    console.error("Firestore inline modification rejection:", err);
                     alert("Database write validation exception rejection: " + err.message);
+                    
+                    // Revert UI buttons on hard connection breaks
+                    btn.innerText = "💾 Save";
+                    btn.style.opacity = "1";
                 }
             }
         });
     });
 
+    // 2. ATTACH PURGE DELETION CLICK HANDLERS
     document.querySelectorAll('.btn-delete-student').forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
             const studentId = btn.getAttribute('data-id');
             const parentId = btn.getAttribute('data-pid');
             
@@ -256,7 +279,6 @@ function bindInteractiveRecordActionButtons() {
         });
     });
 }
-
 // 5. RENDER AGENT LIST AND CALCULATE COMMISSIONS
 function renderAgentsManagementTable() {
     if (!agentsTableBody) return;
