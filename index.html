@@ -2,282 +2,282 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Math Speedster - Student Game Arena</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Speedster - Admin Core</title>
     <style>
-        /* Modern Dark UI Core Design Palette */
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: #0b0f19; color: #f1f5f9; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 15px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: #0b0f19; color: #f1f5f9; padding: 12px; min-height: 100vh; }
         
-        .portal-container { background: #111827; width: 100%; max-width: 450px; border-radius: 16px; border: 1px solid #1e293b; padding: 30px 20px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }
-        .screen-panel { display: none; }
-        .screen-panel.active { display: block; }
-        
-        /* Typography Elements */
-        h1 { font-size: 1.8rem; color: #f8fafc; text-align: center; margin-bottom: 8px; font-weight: 700; }
-        p.subtitle { color: #94a3b8; font-size: 0.95rem; text-align: center; margin-bottom: 25px; line-height: 1.4; }
-        
-        /* Form Control Layouts */
-        .form-group { margin-bottom: 20px; text-align: left; }
-        label { display: block; color: #38bdf8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
-        input[type="tel"] { width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 14px; font-size: 1.3rem; color: #fff; text-align: center; letter-spacing: 3px; outline: none; transition: border-color 0.2s; }
-        input[type="tel"]:focus { border-color: #38bdf8; }
-        
-        /* Button UI Styles */
-        .btn { width: 100%; display: flex; justify-content: center; align-items: center; padding: 14px; font-size: 1.1rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
-        .btn-primary { background: #0284c7; color: #fff; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25); }
+        /* Top Navigation Header Bar */
+        header { background: #161e2e; padding: 16px; border-radius: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #243249; }
+        h1 { font-size: 1.3rem; color: #38bdf8; display: flex; align-items: center; gap: 8px; }
+        #user-status { font-size: 0.8rem; color: #94a3b8; margin-top: 2px; }
+        .btn { padding: 10px 16px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: background 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: #0284c7; color: white; }
         .btn-primary:hover { background: #0369a1; }
-        .btn-danger { background: transparent; border: 1px solid #ef4444; color: #ef4444; margin-top: 20px; font-size: 0.85rem; padding: 8px; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: #334155; color: #f1f5f9; }
+        .btn-secondary:hover { background: #475569; }
+        .btn-xs { padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; }
+
+        /* Realtime Metric Analytics Cards Layout */
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+        .metric-card { background: #161e2e; padding: 16px; border-radius: 12px; border: 1px solid #243249; text-align: center; }
+        .metric-card p { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+        .metric-card h4 { font-size: 1.8rem; color: #f8fafc; margin-top: 4px; font-weight: 700; }
+
+        /* Mobile Responsive View Selection Submenu Tabs */
+        .admin-tabs { display: flex; gap: 8px; background: #161e2e; padding: 6px; border-radius: 10px; margin-bottom: 16px; border: 1px solid #243249; overflow-x: auto; }
+        .tab-btn { flex: 1; text-align: center; padding: 10px; border-radius: 6px; background: transparent; color: #94a3b8; border: none; font-weight: 600; cursor: pointer; font-size: 0.9rem; white-space: nowrap; }
+        .tab-btn.active { background: #1e293b; color: #38bdf8; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+        /* Modular Interface Cards Component Containers */
+        .panel-card { background: #161e2e; padding: 16px; border-radius: 12px; border: 1px solid #243249; margin-bottom: 16px; display: none; }
+        .panel-card.visible { display: block; }
+        h2 { font-size: 1.1rem; margin-bottom: 14px; color: #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
         
-        /* Status Feedback Cards */
-        .status-alert { margin-top: 15px; padding: 12px; border-radius: 8px; display: none; font-size: 0.95rem; text-align: center; line-height: 1.4; }
+        /* Interactive Input Form Control Layout Styles */
+        label { display: block; margin: 10px 0 4px 0; font-size: 0.85rem; color: #94a3b8; }
+        input, select { width: 100%; padding: 12px; background: #0b0f19; border: 1px solid #243249; border-radius: 8px; color: white; font-size: 0.95rem; outline: none; }
+        input:focus, select:focus { border-color: #38bdf8; }
+        .form-row { display: grid; grid-template-columns: 1fr; gap: 0; }
+
+        /* Live Filtering Search Controls Utilities bar */
+        .search-bar-container { display: flex; gap: 8px; margin-bottom: 12px; }
+        .search-bar-container input { margin-bottom: 0; }
+        .search-bar-container select { width: 140px; margin-bottom: 0; }
+
+        /* Data Tables Layout Container Framework */
+        .table-overflow { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid #243249; background: #0b0f19; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; min-width: 600px; }
+        th, td { padding: 12px; border-bottom: 1px solid #243249; }
+        th { background: #111827; color: #94a3b8; font-weight: 600; }
+        tr:hover { background: #1e293b; }
         
-        /* Game Arena Specific Layout Styles */
-        .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #1e293b; padding: 10px 14px; border-radius: 8px; border: 1px solid #334155; font-size: 0.9rem; }
-        #game-player-tag { color: #38bdf8; font-weight: bold; }
-        #game-timer-clock { color: #10b981; font-weight: bold; font-size: 1.1rem; }
-        #game-score-counter { color: #10b981; font-weight: bold; }
+        /* UI Presentation Status Badges and Switches Elements */
+        .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+        .badge-info { background: #0284c7; color: white; }
+        .badge-success { background: #10b981; color: white; }
+        .badge-warn { background: #f59e0b; color: white; }
         
-        .question-display-box { background: #090d16; padding: 35px 15px; border-radius: 12px; border: 2px dashed #334155; margin-bottom: 25px; min-height: 150px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: border-color 0.15s; }
-        #visual-emoji-display { font-size: 3rem; letter-spacing: 6px; margin-bottom: 12px; min-height: 4rem; display: flex; align-items: center; justify-content: center; user-select: none; }
-        #visual-text-prompt { font-size: 1rem; color: #94a3b8; }
-        
-        .arcade-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-        .arcade-key { background: #1e293b; border: 1px solid #334155; color: #f8fafc; font-size: 2rem; font-weight: 700; padding: 18px 0; border-radius: 10px; cursor: pointer; transition: background 0.1s; display: flex; justify-content: center; align-items: center; }
-        .arcade-key:active { background: #334155; }
+        /* Switch Slider Element For Agent Suspension Toggle Actions */
+        .switch-btn { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; border: none; cursor: pointer; }
+        .status-active { background: #065f46; color: #34d399; }
+        .status-suspended { background: #7f1d1d; color: #f87171; }
+
+        /* Gatekeeper authentication login block display view */
+        #auth-section { text-align: center; max-width: 400px; margin: 60px auto; padding: 32px 24px; }
+        #btn-google-login { width: 100%; padding: 14px; background: white; color: black; border-radius: 8px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; border: none; cursor: pointer; }
+
+        /* Desktop Breakpoints Media Queries */
+        @media (min-width: 768px) {
+            body { padding: 24px; max-width: 1200px; margin: 0 auto; }
+            header { padding: 20px; }
+            h1 { font-size: 1.6rem; }
+            .form-row { grid-template-columns: 1fr 1fr; gap: 16px; }
+            .metrics-grid { gap: 16px; }
+        }
+        /* Mobile Specific View Optimization Rules For Financial Tracking Tables */
+        @media (max-width: 767px) {
+            /* Hide non-critical metadata on mobile screens to save space */
+            #panel-agents th:nth-child(2), #panel-agents td:nth-child(2),   /* Email */
+            #panel-agents th:nth-child(7), #panel-agents td:nth-child(7) {  /* Status Button */
+                display: none;
+            }
+            
+            /* Make text compact and clean on touchscreens */
+            table { font-size: 0.8rem; min-width: 100%; }
+            th, td { padding: 8px 4px; }
+            .btn-xs { padding: 6px 8px; font-size: 0.75rem; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="portal-container">
+    <!-- PORTAL MASTER TOP BAR COMPONENT -->
+    <header>
+        <div>
+            <h1>Math Speedster Core 🚀</h1>
+            <div id="user-status">Network Syncing State Initialization...</div>
+        </div>
+        <button id="btn-logout" class="btn btn-danger" style="display: none;">Logout</button>
+    </header>
+
+    <!-- SECTION 1: GLOBAL LOGIN PROTECTION ENTRY POINT -->
+    <section id="auth-section" class="panel-card visible">
+        <h2>System Terminal Entry</h2>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px;">Authenticated Admin & Agent Secure Gateway.</p>
+        <button id="btn-google-login">
+            <img src="https://g.gstatic.com/images/branding/product/1x/gsa_512dp.png" width="18" alt=""> Access with Google Profile
+        </button>
+    </section>
+
+    <!-- SECTION 2: LIVE CENTRAL REVENUE & CLIENT OPERATIONS WORKSPACE RUNTIME -->
+    <div id="workspace-container" style="display: none;">
         
-        <section id="panel-login" class="screen-panel active">
-            <div style="text-align: center; font-size: 3rem; margin-bottom: 10px;">⚡</div>
-            <h1>Math Speedster</h1>
-            <p class="subtitle">Enter your registered 10-digit WhatsApp number to unlock your game arena!</p>
+        <!-- CORE STATS STRIP LAYER -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <p>Total Registered</p>
+                <h4 id="stat-total-students">0</h4>
+            </div>
+            <div class="metric-card">
+                <p>Field Agents</p>
+                <h4 id="stat-total-agents">0</h4>
+            </div>
+            <div class="metric-card">
+                <p>Game Runs</p>
+                <h4 id="stat-total-runs">0</h4>
+            </div>
+        </div>
+
+        <!-- CONSOLE MODE SELECTOR SUB NAVIGATION TAB GRID -->
+        <div class="admin-tabs" id="admin-tabs-nav">
+            <button class="tab-btn active" data-target="panel-records">📋 Student Records</button>
+            <button class="tab-btn" data-target="panel-agents">💼 Hired Agents</button>
+            <button class="tab-btn" data-target="panel-onboard">➕ Client Entry Form</button>
+            <button class="tab-btn" data-target="panel-parent-portal">👨‍👩‍👧 Parent Portal</button>
+        </div>
+
+        <!-- MODULE A: MANAGEMENT LEDGER TAB PANEL -->
+        <section id="panel-records" class="panel-card visible">
+            <h2>Student Roster Database Ledger</h2>
             
-            <form id="parent-login-form">
-                <div class="form-group">
-                    <label for="parent-portal-phone">Mobile Number</label>
-                    <input type="tel" id="parent-portal-phone" placeholder="9876543210" pattern="[0-9]{10}" required autocomplete="off">
+            <!-- Live Text Search & Grade Select Filters Box Tools Row -->
+            <div class="search-bar-container">
+                <input type="text" id="filter-search-input" placeholder="Search by name, phone...">
+                <select id="filter-class-dropdown">
+                    <option value="">All Grades</option>
+                    <option value="Nursery">Nursery</option>
+                    <option value="KG">KG</option>
+                    <option value="UKG">UKG</option>
+                    <option value="1">Class 1</option>
+                    <option value="2">Class 2</option>
+                    <option value="3">Class 3</option>
+                    <option value="4">Class 4</option>
+                    <option value="5">Class 5</option>
+                    <option value="6">Class 6</option>
+                </select>
+            </div>
+
+            <div class="table-overflow">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parent Profile</th>
+                            <th>Phone Identifier</th>
+                            <th>Child Full Name</th>
+                            <th>Class</th>
+                            <th>Top Score</th>
+                            <th>Onboarded By</th>
+                            <th style="text-align: center;">Console Controls Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-table-records-body">
+                        <tr><td colspan="7" style="text-align: center; color: #94a3b8;">Streaming documents snapshot ledger...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- MODULE B: AGENT MANAGEMENT PERFORMANCE TRACKING GRID PANEL -->
+        <section id="panel-agents" class="panel-card">
+            <h2>Hired Field Operations Team Roster</h2>
+            
+            <div style="background: #1e293b; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #243249; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <span style="font-size: 0.9rem; color: #94a3b8;">Standard Payout Per Registered Family:</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="color: #10b981; font-weight: bold;">₹</span>
+                    <input type="number" id="config-commission-rate" value="50" style="width: 70px; padding: 4px 8px; margin-bottom: 0; text-align: center; font-weight: bold; color: #10b981;">
                 </div>
-                <button type="submit" class="btn btn-primary">Start Playing! 🎮</button>
+            </div>
+
+            <div class="table-overflow">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Agent Profile Name</th>
+                            <th>Registration Email</th>
+                            <th style="text-align: center;">Total Leads</th>
+                            <th style="color: #38bdf8;">Total Earned</th>
+                            <th style="color: #10b981;">Paid</th>
+                            <th style="color: #f59e0b;">Balance Due</th>
+                            <th>Status Control Access</th>
+                            <th style="text-align: center;">Accounting Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-table-agents-body">
+                        <tr><td colspan="8" style="text-align: center; color: #94a3b8;">Mapping operations and commission snapshots...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- MODULE C: FIELD AGENT CLIENT ENTRY ONBOARDING FORM FORM VIEW -->
+        <section id="panel-onboard" class="panel-card">
+            <h2>Onboard New Client Family Account</h2>
+            <form id="onboard-form">
+                <div class="form-row">
+                    <div>
+                        <label>Parent Profile Full Name</label>
+                        <input type="text" id="form-parent-name" placeholder="e.g. Ramesh Kumar" required>
+                        <label>WhatsApp Contact Mobile Number</label>
+                        <input type="tel" id="form-parent-phone" placeholder="10-digit number" pattern="[0-9]{10}" required>
+                    </div>
+                    <div>
+                        <label>Student's Full Given Name</label>
+                        <input type="text" id="form-child-name" placeholder="e.g. Aarav" required>
+                        <label>Academic Class Assignment</label>
+                        <select id="form-child-class" required>
+                            <option value="" disabled selected>Choose target level</option>
+                            <option value="Nursery">Nursery</option>
+                            <option value="KG">KG</option>
+                            <option value="UKG">UKG</option>
+                            <option value="1">Class 1</option>
+                            <option value="2">Class 2</option>
+                            <option value="3">Class 3</option>
+                            <option value="4">Class 4</option>
+                            <option value="5">Class 5</option>
+                            <option value="6">Class 6</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; margin-top: 15px; justify-content: center; font-size: 1rem;">
+                    Execute Registration Pipeline
+                </button>
             </form>
-            <div id="parent-portal-status" class="status-alert"></div>
         </section>
-
-        <section id="panel-game" class="screen-panel">
-            <div class="game-header">
-                <span id="game-player-tag">Player: ---</span>
-                <span id="game-timer-clock">⏱️ 30s</span>
-                <span id="game-score-counter">Score: 0</span>
+<!-- MODULE D: PUBLIC PARENT/STUDENT CHECK-IN PORTAL -->
+        <section id="panel-parent-portal" class="panel-card">
+            <div style="text-align: center; max-width: 420px; margin: 20px auto; padding: 10px;">
+                <div style="font-size: 3rem; margin-bottom: 10px;">🎮</div>
+                <h2 style="justify-content: center; margin-bottom: 8px; font-size: 1.4rem;">Student Game Arena</h2>
+                <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 24px;">Enter your registered 10-digit WhatsApp number to unlock your math challenges!</p>
+                
+                <form id="parent-login-form">
+                    <div style="margin-bottom: 16px; text-align: left;">
+                        <label for="parent-portal-phone" style="color: #38bdf8; font-weight: 600;">Registered Mobile Number</label>
+                        <input type="tel" id="parent-portal-phone" placeholder="e.g. 9876543210" pattern="[0-9]{10}" required 
+                               style="font-size: 1.2rem; padding: 14px; text-align: center; letter-spacing: 2px;">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; justify-content: center; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);">
+                        Start Playing! ⚡
+                    </button>
+                </form>
+                
+                <!-- Dynamic Response Status Alert Card -->
+                <div id="parent-portal-status" style="margin-top: 20px; padding: 12px; border-radius: 8px; display: none; font-size: 0.95rem;"></div>
             </div>
-
-            <div class="question-display-box" id="game-question-box">
-                <div id="visual-emoji-display">🍏 🍏 🍏</div>
-                <div id="visual-text-prompt">How many items do you see?</div>
-            </div>
-
-            <div class="arcade-keypad">
-                <button class="arcade-key" data-val="1">1</button>
-                <button class="arcade-key" data-val="2">2</button>
-                <button class="arcade-key" data-val="3">3</button>
-                <button class="arcade-key" data-val="4">4</button>
-                <button class="arcade-key" data-val="5">5</button>
-                <button class="arcade-key" data-val="6">6</button>
-            </div>
-            
-            <button id="btn-abort-game" class="btn btn-danger">🚪 Quit Session</button>
         </section>
-
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, getDoc, getDocs, collection, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    <!-- MODULE EMBEDDED FOOTER CONTROLS CONFIGURATION STATUS PANEL -->
+    <div id="system-config-footer" style="display: none; text-align: center; margin-top: 20px; padding: 15px; border-top: 1px solid #243249;">
+        <button id="btn-export-csv" class="btn btn-secondary btn-xs">📥 Export Database Backup (CSV)</button>
+    </div>
 
-        // Core Live Database Link Configurations Layout
-        const firebaseConfig = {
-            authDomain: "math-speed-web.firebaseapp.com",
-            projectId: "math-speed-web",
-            storageBucket: "math-speed-web.appspot.com",
-            messagingSenderId: "360693593368",
-            appId: "1:360693593368:web:b1df8fcf0df1ffb79930f3"
-        };
-
-        const activeConfig = (window.location.hostname.includes("github.io")) 
-            ? { ...firebaseConfig, databaseURL: "https://math-speed-web-default-rtdb.asia-southeast1.firebasedatabase.app" }
-            : firebaseConfig;
-
-        const app = initializeApp(activeConfig);
-        const db = getFirestore(app);
-
-        // UI View Element Access Pointers
-        const panelLogin = document.getElementById('panel-login');
-        const panelGame = document.getElementById('panel-game');
-        const parentLoginForm = document.getElementById('parent-login-form');
-        const parentPortalStatus = document.getElementById('parent-portal-status');
-        
-        const gamePlayerTag = document.getElementById('game-player-tag');
-        const gameTimerClock = document.getElementById('game-timer-clock');
-        const gameScoreCounter = document.getElementById('game-score-counter');
-        const visualEmojiDisplay = document.getElementById('visual-emoji-display');
-        const gameQuestionBox = document.getElementById('game-question-box');
-        const btnAbortGame = document.getElementById('btn-abort-game');
-
-        // Runtime Engine Core Global Track Variables
-        let activeStudent = null;
-        let gameTimerInterval = null;
-        let currentCorrectAnswer = 0;
-        let currentSessionScore = 0;
-        let secondsRemaining = 30;
-        const assetSprites = ["🍏", "⭐", "🎈", "🚗", "🧸", "🐱", "🍦", "🍕", "🤖"];
-
-        // 1. LOOKUP AND VERIFY PLAYER PROFILE
-        parentLoginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const inputPhone = document.getElementById('parent-portal-phone').value.trim();
-            const targetParentKey = "parent_" + inputPhone;
-            
-            parentPortalStatus.style.display = "block";
-            parentPortalStatus.style.background = "#1e293b";
-            parentPortalStatus.style.color = "#94a3b8";
-            parentPortalStatus.innerHTML = "Searching Arena Database... 🔍";
-
-            try {
-                // Entire database flow nested inside try block to stop executions on failures cleanly
-                const parentDocSnap = await getDoc(doc(db, "users", targetParentKey));
-                
-                if (!parentDocSnap.exists()) {
-                    showLoginError("❌ Profile not found. Please verify with your Field Agent Or Send details on Whatsapp on 7800665883");
-                    return;
-                }
-
-                // Retrieve Linked Student Record Array
-                const studentsQuerySnap = await getDocs(collection(db, "students"));
-                let matchingStudent = null;
-
-                studentsQuerySnap.forEach((doc) => {
-                    const data = doc.data();
-                    if (data.parentId === targetParentKey) {
-                        matchingStudent = { id: doc.id, ...data };
-                    }
-                });
-
-                if (!matchingStudent) {
-                    showLoginError("❌ No student profile is linked to this account.");
-                    return;
-                }
-
-                // Render Success State Notification Card
-                parentPortalStatus.style.background = "#065f46";
-                parentPortalStatus.style.color = "#34d399";
-                parentPortalStatus.innerHTML = `Welcome back, <strong>${matchingStudent.name}</strong>! 👋<br>Initializing Game Engines... 🚀`;
-
-                setTimeout(() => {
-                    launchActiveGameSession(matchingStudent);
-                }, 1500);
-
-            } catch (err) {
-                console.error("Database error details:", err);
-                showLoginError("Connection Error: " + err.message);
-            }
-        });
-
-        function showLoginError(msg) {
-            parentPortalStatus.style.background = "#7f1d1d";
-            parentPortalStatus.style.color = "#f87171";
-            parentPortalStatus.innerHTML = msg;
-        }
-
-        // 2. RUN GAME CONTEXT TIMER TIMELINE
-        function launchActiveGameSession(studentProfile) {
-            activeStudent = studentProfile;
-            currentSessionScore = 0;
-            secondsRemaining = 30;
-            
-            panelLogin.classList.remove('active');
-            panelGame.classList.add('active');
-            
-            gamePlayerTag.innerText = `Player: ${activeStudent.name}`;
-            gameScoreCounter.innerText = `Score: 0`;
-            gameTimerClock.innerText = `⏱️ 30s`;
-            gameTimerClock.style.color = "#10b981";
-
-            generateNextQuestion();
-
-            clearInterval(gameTimerInterval);
-            gameTimerInterval = setInterval(() => {
-                secondsRemaining--;
-                gameTimerClock.innerText = `⏱️ ${secondsRemaining}s`;
-                if (secondsRemaining <= 10) gameTimerClock.style.color = "#ef4444";
-                if (secondsRemaining <= 0) finalizeGameSession(false);
-            }, 1000);
-        }
-
-        // 3. GENERATE VISUAL NURSERY TARGETS (Range: 1 to 5)
-        function generateNextQuestion() {
-            // Strictly limits objects to a clean 1-5 range for foundational learners
-            currentCorrectAnswer = Math.floor(Math.random() * 5) + 1;
-            const randomSprite = assetSprites[Math.floor(Math.random() * assetSprites.length)];
-            visualEmojiDisplay.innerText = randomSprite.repeat(currentCorrectAnswer);
-        }
-
-        // 4. CAPTURE KEYPAD PRESS TOUCH CONTEXT INTERACTION
-        document.querySelectorAll('.arcade-key').forEach(key => {
-            key.addEventListener('click', () => {
-                if (!activeStudent || secondsRemaining <= 0) return;
-                const userChoice = parseInt(key.getAttribute('data-val'));
-
-                if (userChoice === currentCorrectAnswer) {
-                    currentSessionScore++;
-                    gameScoreCounter.innerText = `Score: ${currentSessionScore}`;
-                    flashFeedback("#10b981");
-                    generateNextQuestion();
-                } else {
-                    flashFeedback("#ef4444");
-                }
-            });
-        });
-
-        function flashFeedback(color) {
-            gameQuestionBox.style.borderColor = color;
-            setTimeout(() => { gameQuestionBox.style.borderColor = "#334155"; }, 150);
-        }
-
-        // 5. ATOMIC COMMIT METRICS TRACK TO CLOUD FIRESTORE ARRAY
-        async function finalizeGameSession(wasAborted = false) {
-            clearInterval(gameTimerInterval);
-            if (!activeStudent) return;
-
-            if (wasAborted) {
-                alert("Session closed. Current score stats dropped.");
-            } else {
-                alert(`🏁 Time's Up! Tremendous performance! You scored ${currentSessionScore} points.`);
-                try {
-                    const trackingArray = activeStudent.mathSpeedScores || [];
-                    
-                    // Appending the score cleanly as a pure integer
-                    trackingArray.push(parseInt(currentSessionScore));
-
-                    await updateDoc(doc(db, "students", activeStudent.id), {
-                        mathSpeedScores: trackingArray
-                    });
-                    console.log("Cloud Database Metrics Synced Successfully.");
-                } catch (err) {
-                    console.error("Firestore Upload Sync Exception Failure:", err);
-                }
-            }
-
-            // Return to Pure Clean Main Screen State
-            activeStudent = null;
-            panelGame.classList.remove('active');
-            panelLogin.classList.add('active');
-            parentPortalStatus.style.display = "none";
-            parentLoginForm.reset();
-        }
-
-        btnAbortGame.addEventListener('click', () => finalizeGameSession(true));
-    </script>
+    <script type="module" src="auth-gateway.js?v=1.2"></script>
+    <script type="module" src="game-engine.js?v=1.2"></script>
 </body>
 </html>
