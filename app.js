@@ -57,55 +57,75 @@ const btnGoogleLogin = document.getElementById('btn-google-login');
 const btnLogout = document.getElementById('btn-logout');
 const btnExportCSV = document.getElementById('btn-export-csv');
 
+// Game Arena Runtime Engine Core Global Track Variables
+let activeStudent = null;
+let gameTimerInterval = null;
+let currentCorrectAnswer = 0;
+let currentSessionScore = 0;
+let secondsRemaining = 30;
+const assetSprites = ["🍏", "⭐", "🎈", "🚗", "🧸", "🐱", "🍦", "🍕", "🤖"];
+
+const panelLogin = document.getElementById('panel-login');
+const panelGame = document.getElementById('panel-game');
+const gamePlayerTag = document.getElementById('game-player-tag');
+const gameTimerClock = document.getElementById('game-timer-clock');
+const gameScoreCounter = document.getElementById('game-score-counter');
+const visualEmojiDisplay = document.getElementById('visual-emoji-display');
+const gameQuestionBox = document.getElementById('game-question-box');
+const btnAbortGame = document.getElementById('btn-abort-game');
+
 // 1. MONITOR CORE USER SECURITY AND ACCESS LEVELS
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // Run a verification lookup check on the incoming user against the database block blacklist rules
-        const agentDocRef = doc(db, "agents", user.uid);
-        const agentCheck = await getDoc(agentDocRef);
-        
-        if (agentCheck.exists() && agentCheck.data().status === "Suspended" && user.email.toLowerCase() !== MASTER_ADMIN_EMAIL.toLowerCase()) {
-            alert("Administrative Notification: This agent account access authorization has been suspended.");
-            signOut(auth);
-            return;
-        }
+        try {
+            const agentDocRef = doc(db, "agents", user.uid);
+            const agentCheck = await getDoc(agentDocRef);
+            
+            if (agentCheck.exists() && agentCheck.data().status === "Suspended" && user.email.toLowerCase() !== MASTER_ADMIN_EMAIL.toLowerCase()) {
+                alert("Administrative Notification: This agent account access authorization has been suspended.");
+                signOut(auth);
+                return;
+            }
 
-        authSection.classList.remove('visible');
-        workspaceContainer.style.display = 'block';
-        btnLogout.style.display = 'inline-block';
+            if (authSection) authSection.classList.remove('visible');
+            if (workspaceContainer) workspaceContainer.style.display = 'block';
+            if (btnLogout) btnLogout.style.display = 'inline-block';
 
-        // Auto write profile state into internal systems register database catalog
-        await setDoc(agentDocRef, {
-            name: user.displayName || "Field Staff Personnel",
-            email: user.email,
-            lastActive: new Date()
-        }, { merge: true });
+            await setDoc(agentDocRef, {
+                name: user.displayName || "Field Staff Personnel",
+                email: user.email,
+                lastActive: new Date()
+            }, { merge: true });
 
-        // CORE ACCESS ROUTING EVALUATOR RULE ENGINE
-        if (user.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
-            userStatus.innerHTML = `<strong>${user.displayName || 'Master'}</strong> <span class="badge badge-success">👑 ADMIN CONSOLE</span>`;
-            adminTabsNav.style.display = 'flex';
-            systemConfigFooter.style.display = 'block';
-            loadComprehensiveSystemData();
-        } else {
-            userStatus.innerHTML = `<strong>${user.displayName || 'Agent'}</strong> <span class="badge badge-info">💼 FIELD OPERATIONS</span>`;
-            adminTabsNav.style.display = 'none'; // Lock away navigation selection options from general field agents
-            systemConfigFooter.style.display = 'none';
-            switchActiveTabPanel('panel-onboard'); // Route field agent straight to onboarding form view
+            if (user.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
+                if (userStatus) userStatus.innerHTML = `<strong>${user.displayName || 'Master'}</strong> <span class="badge badge-success">👑 ADMIN CONSOLE</span>`;
+                if (adminTabsNav) adminTabsNav.style.display = 'flex';
+                if (systemConfigFooter) systemConfigFooter.style.display = 'block';
+                loadComprehensiveSystemData();
+            } else {
+                if (userStatus) userStatus.innerHTML = `<strong>${user.displayName || 'Agent'}</strong> <span class="badge badge-info">💼 FIELD OPERATIONS</span>`;
+                if (adminTabsNav) adminTabsNav.style.display = 'none'; 
+                if (systemConfigFooter) systemConfigFooter.style.display = 'none';
+                switchActiveTabPanel('panel-onboard'); 
+            }
+        } catch (err) {
+            console.error("Authentication state routing failure:", err);
         }
     } else {
-        userStatus.innerText = "Security System Access: Logged Out Pin Status.";
-        authSection.classList.add('visible');
-        workspaceContainer.style.display = 'none';
-        btnLogout.style.display = 'none';
-        systemConfigFooter.style.display = 'none';
+        if (userStatus) userStatus.innerText = "Security System Access: Logged Out Pin Status.";
+        if (authSection) authSection.classList.add('visible');
+        if (workspaceContainer) workspaceContainer.style.display = 'none';
+        if (btnLogout) btnLogout.style.display = 'none';
+        if (systemConfigFooter) systemConfigFooter.style.display = 'none';
     }
 });
 
 // 2. FETCH EVERY RECORD CONCURRENTLY AND LOAD COUNTERS
 async function loadComprehensiveSystemData() {
     try {
-        recordsTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Streaming database ledger tables...</td></tr>';
+        if (recordsTableBody) {
+            recordsTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Streaming database ledger tables...</td></tr>';
+        }
         
         const [studentsSnap, usersSnap, agentsSnap] = await Promise.all([
             getDocs(collection(db, "students")),
@@ -113,7 +133,6 @@ async function loadComprehensiveSystemData() {
             getDocs(collection(db, "agents"))
         ]);
 
-        // Reset memory data stores lists
         cachedStudents = [];
         cachedParents = {};
         cachedAgents = {};
@@ -122,15 +141,17 @@ async function loadComprehensiveSystemData() {
         agentsSnap.forEach(doc => { cachedAgents[doc.id] = { id: doc.id, ...doc.data() }; });
         studentsSnap.forEach(doc => { cachedStudents.push({ id: doc.id, ...doc.data() }); });
 
-        // Update top analytical counter summary panels
-        statTotalStudents.innerText = cachedStudents.length;
-        statTotalAgents.innerText = Object.keys(cachedAgents).length;
+        if (statTotalStudents) statTotalStudents.innerText = cachedStudents.length;
+        if (statTotalAgents) statTotalAgents.innerText = Object.keys(cachedAgents).length;
         
         let aggregateRuns = 0;
-        cachedStudents.forEach(s => { if (s.mathSpeedScores) aggregateRuns += s.mathSpeedScores.length; });
-        statTotalRuns.innerText = aggregateRuns;
+        cachedStudents.forEach(s => {
+            const completed = parseInt(s.gamesCompleted) || 0;
+            const aborted = parseInt(s.gamesAborted) || 0;
+            aggregateRuns += (completed + aborted);
+        });
+        if (statTotalRuns) statTotalRuns.innerText = aggregateRuns;
 
-        // Populate system panels layout contents
         renderSystemRecordsTable(cachedStudents);
         renderAgentsManagementTable();
 
@@ -139,8 +160,9 @@ async function loadComprehensiveSystemData() {
     }
 }
 
-// 3. RENDER THE STUDENT DB RECORDS LEDGER TABLE (WITH SEARCH / EDIT / DELETE ACTIONS)
+// 3. RENDER THE STUDENT DB RECORDS LEDGER TABLE (WITH ANALYTICS FIELD UPDATES)
 function renderSystemRecordsTable(studentsArray) {
+    if (!recordsTableBody) return;
     let rowsHTML = "";
     
     if (studentsArray.length === 0) {
@@ -152,10 +174,11 @@ function renderSystemRecordsTable(studentsArray) {
         const parent = cachedParents[student.parentId] || { name: "N/A", phone: "N/A", onboardedBy: "" };
         const agent = cachedAgents[parent.onboardedBy] || { name: "Direct Portal" };
         
-        // Compute maximum arithmetic performance speed score
-        const highscore = (student.mathSpeedScores && student.mathSpeedScores.length > 0) 
-            ? Math.max(...student.mathSpeedScores) 
-            : 0;
+        // Pull explicitly saved milestone fields
+        const highscore = student.highScore || 0;
+        const lastScore = student.lastScore || 0;
+        const completed = student.gamesCompleted || 0;
+        const aborted = student.gamesAborted || 0;
 
         rowsHTML += `
             <tr id="row-student-${student.id}">
@@ -163,8 +186,8 @@ function renderSystemRecordsTable(studentsArray) {
                 <td><span id="txt-pphone-${student.id}">${parent.phone}</span></td>
                 <td><span id="txt-sname-${student.id}" style="color:#f8fafc;">${student.name}</span></td>
                 <td><span class="badge badge-info" id="txt-sclass-${student.id}">${student.class}</span></td>
-                <td style="color:#10b981; font-weight:bold; text-align:center;">${highscore}⚡</td>
-                <td style="color:#38bdf8;">${agent.name}</td>
+                <td style="color:#10b981; font-weight:bold; text-align:center;">🏆${highscore} / ⏱️${lastScore}</td>
+                <td style="color:#38bdf8; text-align:center;">✅${completed} | 🚪${aborted}</td>
                 <td style="text-align: center; min-width:160px;">
                     <button class="btn btn-secondary btn-xs btn-edit-student" data-id="${student.id}" data-pid="${parent.id}">✏️ Edit</button>
                     <button class="btn btn-danger btn-xs btn-delete-student" data-id="${student.id}" data-pid="${parent.id}" style="margin-left:4px;">🗑️ Del</button>
@@ -179,26 +202,23 @@ function renderSystemRecordsTable(studentsArray) {
 
 // 4. INLINE EDITING AND ROW PURGE EVENT ATTACHMENTS 
 function bindInteractiveRecordActionButtons() {
-    // Attach inline data amendment triggers
     document.querySelectorAll('.btn-edit-student').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const studentId = btn.getAttribute('data-id');
             const parentId = btn.getAttribute('data-pid');
             
             if (btn.innerText === "✏️ Edit") {
-                // Flip text cells into textfields inputs controls
                 const parentNameSpan = document.getElementById(`txt-pname-${studentId}`);
                 const parentPhoneSpan = document.getElementById(`txt-pphone-${studentId}`);
                 const studentNameSpan = document.getElementById(`txt-sname-${studentId}`);
                 
-                parentNameSpan.innerHTML = `<input type="text" id="inp-pname-${studentId}" value="${parentNameSpan.innerText}" style="padding:4px; font-size:0.85rem;">`;
-                parentPhoneSpan.innerHTML = `<input type="text" id="inp-pphone-${studentId}" value="${parentPhoneSpan.innerText}" style="padding:4px; font-size:0.85rem;">`;
-                studentNameSpan.innerHTML = `<input type="text" id="inp-sname-${studentId}" value="${studentNameSpan.innerText}" style="padding:4px; font-size:0.85rem;">`;
+                parentNameSpan.innerHTML = `<input type="text" id="inp-pname-${studentId}" value="${parentNameSpan.innerText}" style="padding:4px; font-size:0.85rem; width:100px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:4px;">`;
+                parentPhoneSpan.innerHTML = `<input type="text" id="inp-pphone-${studentId}" value="${parentPhoneSpan.innerText}" style="padding:4px; font-size:0.85rem; width:100px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:4px;">`;
+                studentNameSpan.innerHTML = `<input type="text" id="inp-sname-${studentId}" value="${studentNameSpan.innerText}" style="padding:4px; font-size:0.85rem; width:100px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:4px;">`;
                 
                 btn.innerText = "💾 Save";
                 btn.classList.replace('btn-secondary', 'btn-primary');
             } else {
-                // Extract changes values and commit update modifications back down to Firestore
                 const editParentName = document.getElementById(`inp-pname-${studentId}`).querySelector('input').value;
                 const editParentPhone = document.getElementById(`inp-pphone-${studentId}`).querySelector('input').value;
                 const editStudentName = document.getElementById(`inp-sname-${studentId}`).querySelector('input').value;
@@ -209,7 +229,7 @@ function bindInteractiveRecordActionButtons() {
                     
                     btn.innerText = "✏️ Edit";
                     btn.classList.replace('btn-primary', 'btn-secondary');
-                    loadComprehensiveSystemData(); // Re-sync view elements 
+                    loadComprehensiveSystemData(); 
                 } catch (err) {
                     alert("Database write validation exception rejection: " + err.message);
                 }
@@ -217,7 +237,6 @@ function bindInteractiveRecordActionButtons() {
         });
     });
 
-    // Attach inline data purge/delete execution actions trigger loops
     document.querySelectorAll('.btn-delete-student').forEach(btn => {
         btn.addEventListener('click', async () => {
             const studentId = btn.getAttribute('data-id');
@@ -226,7 +245,6 @@ function bindInteractiveRecordActionButtons() {
             if (confirm("Security Warning: Are you absolutely sure you want to permanently delete this student record profile? This cannot be undone.")) {
                 try {
                     await deleteDoc(doc(db, "students", studentId));
-                    // Check if parent has any other kids registered before wiping their account completely
                     const checkOtherKids = cachedStudents.filter(s => s.parentId === parentId && s.id !== studentId);
                     if (checkOtherKids.length === 0) {
                         await deleteDoc(doc(db, "users", parentId));
@@ -240,22 +258,18 @@ function bindInteractiveRecordActionButtons() {
     });
 }
 
-// 5. RENDER AGENT LIST AND CALCULATE COMMISSIONS / PERFORMANCE LEAD METRICS
-// 5. RENDER AGENT LIST AND CALCULATE COMMISSIONS / PERFORMANCE LEAD METRICS
+// 5. RENDER AGENT LIST AND CALCULATE COMMISSIONS
 function renderAgentsManagementTable() {
+    if (!agentsTableBody) return;
     let rowsHTML = "";
     
-    // Get the current commission rate set in the UI layout input field
     const rateInput = document.getElementById('config-commission-rate');
     const payoutRate = rateInput ? parseFloat(rateInput.value) || 0 : 50;
     
     Object.keys(cachedAgents).forEach(agentId => {
         const agent = cachedAgents[agentId];
-        
-        // Count total leads onboarded by comparing agent UID against parent metadata records
         const leadsCount = Object.values(cachedParents).filter(p => p.onboardedBy === agentId).length;
         
-        // Extract financial parameters from database or default to zero
         const totalEarned = leadsCount * payoutRate;
         const totalPaid = agent.amountPaid || 0;
         const balanceDue = totalEarned - totalPaid;
@@ -287,7 +301,6 @@ function renderAgentsManagementTable() {
     
     agentsTableBody.innerHTML = rowsHTML;
 
-    // Bind event to recalculate values dynamically if the master admin updates the flat rate input box
     const rateInputEl = document.getElementById('config-commission-rate');
     if (rateInputEl && !rateInputEl.dataset.listenerAttached) {
         rateInputEl.dataset.listenerAttached = true;
@@ -296,7 +309,6 @@ function renderAgentsManagementTable() {
         });
     }
 
-    // Bind agent access control block toggles
     document.querySelectorAll('.btn-toggle-agent-status').forEach(btn => {
         btn.addEventListener('click', async () => {
             const agentId = btn.getAttribute('data-id');
@@ -314,14 +326,13 @@ function renderAgentsManagementTable() {
         });
     });
 
-    // Bind Payout Processing Trigger Buttons
     document.querySelectorAll('.btn-record-payout').forEach(btn => {
         btn.addEventListener('click', async () => {
             const agentId = btn.getAttribute('data-id');
             const balanceDue = parseFloat(btn.getAttribute('data-balance'));
             
             const payoutInput = prompt(`Enter the amount to settle for this agent (Max Balance Due: ₹${balanceDue}):`, balanceDue);
-            if (payoutInput === null) return; // Action cancelled by user
+            if (payoutInput === null) return; 
             
             const payoutAmount = parseFloat(payoutInput);
             if (isNaN(payoutAmount) || payoutAmount <= 0 || payoutAmount > balanceDue) {
@@ -334,14 +345,13 @@ function renderAgentsManagementTable() {
                 const currentPaidSum = agent.amountPaid || 0;
                 const newPaidSum = currentPaidSum + payoutAmount;
 
-                // Update ledger profile in Firestore database
                 await updateDoc(doc(db, "agents", agentId), {
                     amountPaid: newPaidSum,
                     lastPaymentDate: new Date()
                 });
 
                 alert(`Payment Confirmed: Successfully recorded settlement of ₹${payoutAmount}. Ledger profile updated.`);
-                loadComprehensiveSystemData(); // Re-sync core dataset elements view
+                loadComprehensiveSystemData(); 
             } catch (err) {
                 alert("Failed to commit transaction updates: " + err.message);
             }
@@ -351,8 +361,9 @@ function renderAgentsManagementTable() {
 
 // 6. CLIENT SEARCH ENGINE SUBROUTINE FILTER LOGIC LOOP
 function executeLiveLocalFilteringSearch() {
+    if (!filterSearchInput) return;
     const query = filterSearchInput.value.toLowerCase();
-    const classFilter = filterClassDropdown.value;
+    const classFilter = filterClassDropdown ? filterClassDropdown.value : "";
 
     const filteredList = cachedStudents.filter(student => {
         const parent = cachedParents[student.parentId] || { name: "", phone: "" };
@@ -365,70 +376,76 @@ function executeLiveLocalFilteringSearch() {
 
     renderSystemRecordsTable(filteredList);
 }
-filterSearchInput.addEventListener('input', executeLiveLocalFilteringSearch);
-filterClassDropdown.addEventListener('change', executeLiveLocalFilteringSearch);
+if (filterSearchInput) filterSearchInput.addEventListener('input', executeLiveLocalFilteringSearch);
+if (filterClassDropdown) filterClassDropdown.addEventListener('change', executeLiveLocalFilteringSearch);
 
 // 7. FORM SUBMISSION WORKFLOW HANDLING FOR AGENTS & ADMIN
-onboardForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const agent = auth.currentUser;
-    if (!agent) return alert("Security context missing.");
+if (onboardForm) {
+    onboardForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const agent = auth.currentUser;
+        if (!agent) return alert("Security context missing.");
 
-    const pName = document.getElementById('form-parent-name').value;
-    const pPhone = document.getElementById('form-parent-phone').value;
-    const cName = document.getElementById('form-child-name').value;
-    const cClass = document.getElementById('form-child-class').value;
+        const pName = document.getElementById('form-parent-name').value;
+        const pPhone = document.getElementById('form-parent-phone').value;
+        const cName = document.getElementById('form-child-name').value;
+        const cClass = document.getElementById('form-child-class').value;
 
-    try {
-        const parentKey = "parent_" + pPhone;
-        const studentKey = "student_" + Date.now();
+        try {
+            const parentKey = "parent_" + pPhone;
+            const studentKey = "student_" + Date.now();
 
-        await setDoc(doc(db, "users", parentKey), {
-            name: pName,
-            phone: pPhone,
-            role: "parent",
-            onboardedBy: agent.uid,
-            createdAt: new Date()
-        });
+            await setDoc(doc(db, "users", parentKey), {
+                name: pName,
+                phone: pPhone,
+                role: "parent",
+                onboardedBy: agent.uid,
+                createdAt: new Date()
+            });
 
-        await setDoc(doc(db, "students", studentKey), {
-            parentId: parentKey,
-            name: cName,
-            class: cClass,
-            createdAt: new Date(),
-            mathSpeedScores: []
-        });
+            await setDoc(doc(db, "students", studentKey), {
+                parentId: parentKey,
+                name: cName,
+                class: cClass,
+                createdAt: new Date(),
+                highScore: 0,
+                lastScore: 0,
+                gamesCompleted: 0,
+                gamesAborted: 0
+            });
 
-        alert(`Success! Onboarded ${cName}'s family under Phone ID: ${pPhone}`);
-        onboardForm.reset();
+            alert(`Success! Onboarded ${cName}'s family under Phone ID: ${pPhone}`);
+            onboardForm.reset();
 
-        if (agent.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
-            loadComprehensiveSystemData();
+            if (agent.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
+                loadComprehensiveSystemData();
+            }
+        } catch (err) {
+            alert("Transaction push failed error: " + err.message);
         }
-    } catch (err) {
-        alert("Transaction push failed error: " + err.message);
-    }
-});
+    });
+}
 
 // 8. DATA PORTABILITY EXPORT UTILITY TO EXCEL/CSV SHEET
-btnExportCSV.addEventListener('click', () => {
-    if (cachedStudents.length === 0) return alert("Data registry vector empty.");
-    
-    let csvData = "Parent Name,WhatsApp Phone,Child Name,Class Level,High Score\n";
-    cachedStudents.forEach(s => {
-        const p = cachedParents[s.parentId] || { name: "N/A", phone: "N/A" };
-        const score = (s.mathSpeedScores && s.mathSpeedScores.length > 0) ? Math.max(...s.mathSpeedScores) : 0;
-        csvData += `"${p.name}","${p.phone}","${s.name}","${s.class}",${score}\n`;
-    });
+if (btnExportCSV) {
+    btnExportCSV.addEventListener('click', () => {
+        if (cachedStudents.length === 0) return alert("Data registry vector empty.");
+        
+        let csvData = "Parent Name,WhatsApp Phone,Child Name,Class Level,High Score,Last Score,Games Completed,Games Aborted\n";
+        cachedStudents.forEach(s => {
+            const p = cachedParents[s.parentId] || { name: "N/A", phone: "N/A" };
+            csvData += `"${p.name}","${p.phone}","${s.name}","${s.class}",${s.highScore || 0},${s.lastScore || 0},${s.gamesCompleted || 0},${s.gamesAborted || 0}\n`;
+        });
 
-    const fileBlob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-    const downloadLink = document.createElement("a");
-    downloadLink.href = URL.createObjectURL(fileBlob);
-    downloadLink.setAttribute("download", `MathSpeedster_Records_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-});
+        const fileBlob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+        const downloadLink = document.createElement("a");
+        downloadLink.href = URL.createObjectURL(fileBlob);
+        downloadLink.setAttribute("download", `MathSpeedster_Records_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    });
+}
 
 // 9. RE-USABLE TAB ROUTING INTERFACE CONTROLLER VIEW SWITCHER
 function switchActiveTabPanel(targetPanelId) {
@@ -448,35 +465,35 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
-// 10. PARENT PORTAL PORT LIMIT CHECK-IN LOGIC ENGINE
-const parentLoginForm = document.getElementById('parent-login-form');
-const parentPortalStatus = document.getElementById('parent-portal-status');
+// 10. PARENT PORTAL ACCESS & RUNTIME ENVIRONMENT INITIALIZATION
+function showParentPortalError(msg) {
+    if (!parentPortalStatus) return;
+    parentPortalStatus.style.background = "#7f1d1d";
+    parentPortalStatus.style.color = "#f87171";
+    parentPortalStatus.innerHTML = msg;
+}
 
 if (parentLoginForm) {
     parentLoginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
         const inputPhone = document.getElementById('parent-portal-phone').value.trim();
+        if (!parentPortalStatus) return;
+
         parentPortalStatus.style.display = "block";
         parentPortalStatus.style.background = "#1e293b";
         parentPortalStatus.style.color = "#94a3b8";
         parentPortalStatus.innerHTML = "Searching database cluster... 🔍";
 
         try {
-            // Construct the exact primary key layout structure matching our onboarding module
             const targetParentKey = "parent_" + inputPhone;
-            
-            // Execute parallel lookups for speed optimization
             const parentDocSnap = await getDoc(doc(db, "users", targetParentKey));
             
             if (!parentDocSnap.exists()) {
-                parentPortalStatus.style.background = "#7f1d1d";
-                parentPortalStatus.style.color = "#f87171";
-                parentPortalStatus.innerHTML = "❌ Number not found. Please ask your field agent to verify your registration.";
+                showParentPortalError(`❌ Profile not found. Please verify with your Field Agent Or <a href="https://wa.me/917800665883" target="_blank" style="color:#38bdf8; font-weight:bold; text-decoration:underline;">Send details on Whatsapp on 7800665883</a>`);
                 return;
             }
 
-            // Query the student profile mapped to this parent profile index
             const studentsQuerySnap = await getDocs(collection(db, "students"));
             let matchingStudent = null;
 
@@ -488,51 +505,182 @@ if (parentLoginForm) {
             });
 
             if (!matchingStudent) {
-                parentPortalStatus.style.background = "#7f1d1d";
-                parentPortalStatus.style.color = "#f87171";
-                parentPortalStatus.innerHTML = "❌ Account found, but no student profile is linked. Contact Admin.";
+                showParentPortalError("❌ Account found, but no student profile is linked. Contact Admin.");
                 return;
             }
 
-            // Success Verification Trigger! 
             parentPortalStatus.style.background = "#065f46";
             parentPortalStatus.style.color = "#34d399";
             parentPortalStatus.innerHTML = `
                 <div style="font-weight:bold; font-size:1.1rem; margin-bottom:4px;">Welcome back, ${matchingStudent.name}! 👋</div>
                 <div style="font-size:0.85rem;">Class Level Locked: <strong>${matchingStudent.class}</strong></div>
-                <div style="margin-top:10px; font-size:0.9rem; color:#fff; font-weight:bold; text-transform:uppercase; animation: pulse 1.5s infinite;">
+                <div style="margin-top:10px; font-size:0.9rem; color:#fff; font-weight:bold; text-transform:uppercase;">
                     Initializing Game Engines... 🚀
                 </div>
             `;
 
-            // Session data payload block is ready for consumption by our game core modules!
-            console.log("Active Student Session Initialized Successfully:", matchingStudent);
-            
-            // NEXT STEP CONNECTOR: This is where we will call our game engine launch file sequence!
+            setTimeout(() => {
+                launchActiveGameSession(matchingStudent);
+            }, 1200);
 
         } catch (err) {
             console.error("Parent check-in pipeline rejection:", err);
-            parentPortalStatus.style.background = "#7f1d1d";
-            parentPortalStatus.style.color = "#f87171";
-            parentPortalStatus.innerHTML = "Database communication exception error: " + err.message;
+            showParentPortalError("Database communication exception error: " + err.message);
         }
     });
 }
-// 11. ADVANCED SECURITY GATEWAY PROFILE SIGN IN TRIGGERS
-// Optimized for seamless rendering across both desktop browsers and mobile touchscreens
-btnGoogleLogin.addEventListener('click', () => {
-    // Check if the agent is opening the portal on a mobile layout framework
-    if (window.innerWidth <= 767) {
-        // Safe fullscreen slide redirect for smooth native mobile execution
-        signInWithRedirect(auth, provider);
-    } else {
-        // Instant interactive breakout pop-up for widescreen laptops
-        signInWithPopup(auth, provider);
+
+function launchActiveGameSession(studentProfile) {
+    activeStudent = studentProfile;
+    currentSessionScore = 0;
+    secondsRemaining = 30;
+    
+    if (panelLogin) panelLogin.classList.remove('active');
+    if (panelGame) panelGame.classList.add('active');
+    
+    if (gamePlayerTag) gamePlayerTag.innerText = `Player: ${activeStudent.name}`;
+    if (gameScoreCounter) gameScoreCounter.innerText = `Score: 0`;
+    if (gameTimerClock) {
+        gameTimerClock.innerText = `⏱️ 30s`;
+        gameTimerClock.style.color = "#10b981";
     }
+
+    generateNextQuestion();
+
+    clearInterval(gameTimerInterval);
+    gameTimerInterval = setInterval(() => {
+        secondsRemaining--;
+        if (gameTimerClock) gameTimerClock.innerText = `⏱️ ${secondsRemaining}s`;
+        if (secondsRemaining <= 10 && gameTimerClock) gameTimerClock.style.color = "#ef4444";
+        if (secondsRemaining <= 0) finalizeGameSession(false);
+    }, 1000);
+}
+
+// MATRIX GENERATOR LINK: Nursery, LKG, and UKG Multi-Syllabus Controller
+function generateNextQuestion() {
+    if (!activeStudent || !visualEmojiDisplay) return;
+
+    const studentClass = (activeStudent.class || "nursery").toLowerCase();
+    const randomSprite = assetSprites[Math.floor(Math.random() * assetSprites.length)];
+    const textPrompt = document.getElementById('visual-text-prompt');
+
+    if (studentClass === "nursery") {
+        currentCorrectAnswer = Math.floor(Math.random() * 5) + 1;
+        visualEmojiDisplay.innerText = randomSprite.repeat(currentCorrectAnswer);
+        if (textPrompt) textPrompt.innerText = "How many items do you see?";
+
+    } else if (studentClass === "lkg") {
+        const starterNum = Math.floor(Math.random() * 14) + 1;
+        currentCorrectAnswer = starterNum + 1; 
+        visualEmojiDisplay.innerText = `${starterNum} ➔ ❓`;
+        if (textPrompt) textPrompt.innerText = `What number comes after ${starterNum}?`;
+
+    } else if (studentClass === "ukg") {
+        const isAddition = Math.random() > 0.5;
+        const num1 = Math.floor(Math.random() * 5) + 1; 
+        const num2 = Math.floor(Math.random() * 4) + 1; 
+
+        if (isAddition) {
+            currentCorrectAnswer = num1 + num2;
+            visualEmojiDisplay.innerText = `${num1} + ${num2}`;
+        } else {
+            const maxNum = Math.max(num1, num2);
+            const minNum = Math.min(num1, num2);
+            currentCorrectAnswer = maxNum - minNum;
+            visualEmojiDisplay.innerText = `${maxNum} - ${minNum}`;
+        }
+        if (textPrompt) textPrompt.innerText = "Solve the puzzle as fast as you can!";
+    }
+}
+
+// CAPTURE KEYPAD CONTROLS
+document.querySelectorAll('.arcade-key').forEach(key => {
+    key.addEventListener('click', () => {
+        if (!activeStudent || secondsRemaining <= 0) return;
+        const userChoice = parseInt(key.getAttribute('data-val'));
+
+        if (userChoice === currentCorrectAnswer) {
+            currentSessionScore++;
+            if (gameScoreCounter) gameScoreCounter.innerText = `Score: ${currentSessionScore}`;
+            flashFeedback("#10b981");
+            generateNextQuestion();
+        } else {
+            flashFeedback("#ef4444");
+        }
+    });
 });
 
-btnLogout.addEventListener('click', () => {
-    if (confirm("Are you sure you want to log out of the Math Speedster Command Engine?")) {
-        signOut(auth);
+function flashFeedback(color) {
+    if (gameQuestionBox) {
+        gameQuestionBox.style.borderColor = color;
+        setTimeout(() => { gameQuestionBox.style.borderColor = "#334155"; }, 150);
     }
-});
+}
+
+// METRIC COMMIT SYSTEM: Highest Score, Last Score, and Game State Totals Tracking
+async function finalizeGameSession(wasAborted = false) {
+    clearInterval(gameTimerInterval);
+    if (!activeStudent) return;
+
+    let currentHigh = parseInt(activeStudent.highScore) || 0;
+    let completedCount = parseInt(activeStudent.gamesCompleted) || 0;
+    let abortedCount = parseInt(activeStudent.gamesAborted) || 0;
+
+    if (wasAborted) {
+        abortedCount++;
+        alert(`Session closed early. Progress saved as incomplete.`);
+        try {
+            await updateDoc(doc(db, "students", activeStudent.id), {
+                lastScore: parseInt(currentSessionScore),
+                gamesAborted: abortedCount
+            });
+        } catch (err) {
+            console.error("Failed to sync aborted metrics:", err);
+        }
+    } else {
+        completedCount++;
+        if (currentSessionScore > currentHigh) {
+            currentHigh = currentSessionScore;
+            alert(`🏆 New High Score! Outstanding job! You scored ${currentSessionScore} points.`);
+        } else {
+            alert(`🏁 Time's Up! Great effort! You scored ${currentSessionScore} points.`);
+        }
+
+        try {
+            await updateDoc(doc(db, "students", activeStudent.id), {
+                highScore: currentHigh,
+                lastScore: parseInt(currentSessionScore),
+                gamesCompleted: completedCount
+            });
+        } catch (err) {
+            console.error("Firestore metrics upload failure:", err);
+        }
+    }
+
+    activeStudent = null;
+    if (panelGame) panelGame.classList.remove('active');
+    if (panelLogin) panelLogin.classList.add('active');
+    if (parentPortalStatus) parentPortalStatus.style.display = "none";
+    if (parentLoginForm) parentLoginForm.reset();
+}
+
+if (btnAbortGame) btnAbortGame.addEventListener('click', () => finalizeGameSession(true));
+
+// 11. ADVANCED SECURITY GATEWAY PROFILE SIGN IN TRIGGERS
+if (btnGoogleLogin) {
+    btnGoogleLogin.addEventListener('click', () => {
+        if (window.innerWidth <= 767) {
+            signInWithRedirect(auth, provider);
+        } else {
+            signInWithPopup(auth, provider);
+        }
+    });
+}
+
+if (btnLogout) {
+    btnLogout.addEventListener('click', () => {
+        if (confirm("Are you sure you want to log out of the Math Speedster Command Engine?")) {
+            signOut(auth);
+        }
+    });
+}
