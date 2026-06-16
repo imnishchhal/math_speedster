@@ -16,4 +16,10 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const provider = new GoogleAuthProvider();
+// firebase-config.js me jahan provider hai use aisa kar do:
+const provider = new GoogleAuthProvider();
+
+// 👇 Ye jadui line jod do, isse Google Cloud ka jhanjhat hamesha ke liye khatam!
+provider.setCustomParameters({
+    prompt: 'select_account'
+});
