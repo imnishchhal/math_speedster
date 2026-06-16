@@ -1,6 +1,7 @@
 // auth-gateway.js
 import { auth, db, provider } from "./firebase-config.js";
-import { signInWithRedirect, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+// 👇 Imports fixed here perfectly
+import { signInWithRedirect, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Global navigation functions
@@ -81,7 +82,7 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // ==========================================
-// GLOBAL CLICK CAPTURER FOR LOGIN/LOGOUT
+// GLOBAL CLICK CAPTURER (PRODUCTION REDIRECT)
 // ==========================================
 document.addEventListener('click', (e) => {
     const loginTarget = e.target.closest('#btn-google-login');
