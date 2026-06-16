@@ -84,14 +84,17 @@ onAuthStateChanged(auth, async (user) => {
 // ==========================================
 // GLOBAL CLICK CAPTURER (PRODUCTION REDIRECT)
 // ==========================================
+// auth-gateway.js ke bilkul neeche click handler ko aisa fix karo:
 document.addEventListener('click', (e) => {
     const loginTarget = e.target.closest('#btn-google-login');
     const logoutTarget = e.target.closest('#btn-logout');
 
     if (loginTarget) {
         e.preventDefault();
-        console.log("🚀 Google Login Triggered via Global Interceptor!");
-        signInWithRedirect(auth, provider);
+        console.log("🚀 Google Login Triggered via Stable Popup!");
+        
+        // 👇 Wapas wahi purana makhhan method jisse mobile me chal raha tha
+        signInWithPopup(auth, provider);
     }
 
     if (logoutTarget) {
