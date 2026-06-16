@@ -82,26 +82,53 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // ==========================================
-// GLOBAL CLICK CAPTURER (PRODUCTION REDIRECT)
+// GLOBAL CLICK CAPTURER (TABS & AUTH FIXED)
 // ==========================================
-// auth-gateway.js ke bilkul neeche click handler ko aisa fix karo:
-document.addEventListener('click', (e) => {
+document.addEventListener('click', async (e) => {
+    // 1. LOGIN BUTTON CLICK 🚀
     const loginTarget = e.target.closest('#btn-google-login');
-    const logoutTarget = e.target.closest('#btn-logout');
-
     if (loginTarget) {
         e.preventDefault();
         console.log("🚀 Google Login Triggered via Stable Popup!");
-        
-        // 👇 Wapas wahi purana makhhan method jisse mobile me chal raha tha
-        signInWithPopup(auth, provider);
+        try {
+            await signInWithPopup(auth, provider);
+            console.log("✨ Popup Login Successful!");
+            window.dispatchEvent(new Event('adminAuthenticated'));
+        } catch (error) {
+            console.error("Popup login error:", error);
+        }
+        return; // Kaam ho gaya, yahin se baahar niklo
     }
 
+    // 2. LOGOUT BUTTON CLICK 🔒
+    const logoutTarget = e.target.closest('#btn-logout');
     if (logoutTarget) {
         e.preventDefault();
         if (confirm("Log out of portal?")) {
             console.log("🔒 Logging out...");
             signOut(auth);
         }
+        return;
+    }
+
+    // 3. ADMIN TABS NAVIGATION CLICK (This was missing/broken) 📋💼➕
+    const tabButton = e.target.closest('.tab-btn');
+    if (tabButton) {
+        e.preventDefault();
+        const targetPanelId = tabButton.getAttribute('data-target');
+        console.log("🎯 Tab Clicked! Target Panel:", targetPanelId);
+        
+        if (targetPanelId && typeof window.switchActiveTabPanel === 'function') {
+            window.switchActiveTabPanel(targetPanelId);
+        } else {
+            // Agar global function me koi dikkat ho, toh fallback logic:
+            document.querySelectorAll('.panel-card').forEach(p => p.classList.remove('visible'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            const targetPanel = document.getElementById(targetPanelId);
+            if (targetPanel) targetPanel.classList.add('visible');
+            tabButton.classList.add('active');
+        }
+        return;
     }
 });
