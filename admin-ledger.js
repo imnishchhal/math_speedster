@@ -167,6 +167,61 @@ if (addAgentForm) {
     });
 }
 
+// 📝 NEW: Direct Onboard Form Submit Handler (Bacha Add Karne Ka Backend Logic)
+if (onboardForm) {
+    onboardForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const parentName = document.getElementById('form-parent-name').value.trim();
+        const parentPhone = document.getElementById('form-parent-phone').value.trim();
+        const childName = document.getElementById('form-child-name').value.trim();
+        const childClass = document.getElementById('form-child-class').value;
+        const submitBtn = onboardForm.querySelector('button[type="submit"]');
+
+        if (!parentName || !parentPhone || !childName || !childClass) return;
+
+        try {
+            submitBtn.innerText = "⚡ Committing Node to Cloud...";
+            submitBtn.disabled = true;
+
+            // 1. Create or Update User (Parent) Profile Document
+            await setDoc(doc(db, "users", parentPhone), {
+                name: parentName,
+                phone: parentPhone,
+                role: "parent",
+                createdAt: new Date()
+            }, { merge: true });
+
+            // 2. Create Student Profile Document
+            // Yahan student ID hum phone_childname format me bana rahe hain taaki unique rahe
+            const studentId = `${parentPhone}_${childName.replace(/\s+/g, '').toLowerCase()}`;
+            
+            await setDoc(doc(db, "students", studentId), {
+                id: studentId,
+                parentId: parentPhone,
+                name: childName,
+                class: childClass,
+                highScore: 0,
+                lastScore: 0,
+                gamesCompleted: 0,
+                gamesAborted: 0,
+                onboardedBy: "Admin Direct", // 👈 Direct admin se ho raha hai
+                createdAt: new Date()
+            });
+
+            alert(`🎉 Success: ${childName} has been successfully onboarded!`);
+            onboardForm.reset();
+            loadComprehensiveSystemData(); // Refresh list instantly
+        } catch (err) {
+            console.error("Direct Onboarding Pipeline Failed:", err);
+            alert("Onboarding failed: " + err.message);
+        } finally {
+            submitBtn.innerText = "Lock Target Data Profile & Commit Node to Cloud 🚀";
+            submitBtn.disabled = false;
+        }
+    });
+}
+
 // 100% SAFE CONTEXT INTERCEPTOR FOR DIRECT EDIT/SAVE & AGENT CONTROLS
 document.addEventListener('click', async (e) => {
     const editBtn = e.target.closest('.btn-edit-student');
