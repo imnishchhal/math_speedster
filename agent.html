@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Math Speedster - Agent Field Portal</title>
+    <style>
+        /* Modern Dark UI Agent Portal Theme Blueprint */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: #0b0f19; color: #f1f5f9; min-height: 100vh; padding: 15px; font-size: 0.95rem; }
+        
+        .portal-wrapper { max-width: 800px; margin: 0 auto; background: #111827; border: 1px solid #1e293b; border-radius: 16px; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4); }
+        
+        /* Auth Gateway Section */
+        .auth-card { max-width: 400px; margin: 80px auto; background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 30px; text-align: center; display: none; }
+        .auth-card.visible { display: block; }
+        
+        /* Error/Suspended State Overlay */
+        .error-banner { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; font-weight: 600; text-align: center; }
+        
+        /* Typography */
+        h1 { font-size: 1.8rem; color: #f8fafc; font-weight: 700; letter-spacing: -0.02em; }
+        h2 { font-size: 1.25rem; color: #f8fafc; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        p.subtitle { color: #94a3b8; font-size: 0.9rem; margin-top: 5px; }
+        
+        /* Header Dashboard */
+        .portal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .agent-badge { background: #1e293b; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; border: 1px solid #334155; color: #38bdf8; font-weight: 600; }
+        
+        /* Live Earnings Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 25px; }
+        @media (min-width: 600px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+        .stat-box { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 15px; text-align: left; }
+        .stat-label { font-size: 0.7rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-value { font-size: 1.35rem; font-weight: 700; color: #fff; margin-top: 4px; }
+        
+        /* Interactive Form & Cards Layout */
+        .content-panel { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .form-group { text-align: left; }
+        .form-group label { display: block; color: #38bdf8; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.05em; }
+        
+        input[type="text"], select { width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; color: #fff; font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+        input[type="text"]:focus, select:focus { border-color: #38bdf8; }
+        
+        /* Custom UI Buttons */
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; font-size: 0.9rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; gap: 8px; width: 100%; }
+        .btn-primary { background: #0284c7; color: #fff; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25); }
+        .btn-primary:hover { background: #0369a1; }
+        .btn-secondary { background: #334155; color: #f1f5f9; border: 1px solid #475569; width: auto; font-size: 0.8rem; padding: 6px 12px; }
+        
+        /* Mobile-Optimized Data Ledger Cards */
+        .ledger-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+        .ledger-card { background: #111827; border: 1px solid #1e293b; border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .ledger-info h4 { font-size: 0.95rem; color: #f8fafc; font-weight: 600; }
+        .ledger-info p { font-size: 0.8rem; color: #94a3b8; margin-top: 2px; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    </style>
+</head>
+<body>
+
+    <!-- GATEWAY: GOOGLE LOGIN PANEL -->
+    <div id="agent-auth-section" class="auth-card visible">
+        <div style="font-size: 3.5rem; margin-bottom: 15px;">💼</div>
+        <h1>Agent Field Portal</h1>
+        <p class="subtitle">Authorized field staff verification required to unlock onboarding pipeline workspace</p>
+        <div style="margin-top: 30px;">
+            <button id="btn-agent-login" class="btn btn-primary">
+                <svg style="width:18px; height:18px; fill:currentColor;" viewBox="0 0 24 24"><path d="M12.24 10.285V13.4h6.887c-.648 2.41-2.519 4.113-5.136 4.113-3.44 0-6.228-2.77-6.228-6.185 0-3.414 2.788-6.184 6.228-6.184 1.54 0 2.944.553 4.032 1.47 l2.454-2.433C18.5 2.76 15.584 1.5 12.24 1.5 6.42 1.5 1.65 6.215 1.65 12s4.77 10.5 10.59 10.5c5.795 0 10.254-4.074 10.254-10.214 0-.665-.077-1.312-.21-1.936H12.24z"/></svg>
+                Verify Google Identity
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN AGENT WORKSPACE CONTAINER -->
+    <div id="agent-workspace" class="portal-wrapper" style="display: none;">
+        
+        <!-- Suspended Warning Pop-up Banner -->
+        <div id="suspension-banner" class="error-banner">
+            ⚠️ ACCESS RESTRICTED: Your field agent privilege gate has been suspended by administration. Please contact support.
+        </div>
+
+        <header class="portal-header">
+            <div>
+                <h1>Field Operations</h1>
+                <p class="subtitle" id="agent-welcome-text">Loading operator profile context...</p>
+            </div>
+            <button id="btn-agent-logout" class="btn btn-secondary">🔒 Exit Portal</button>
+        </header>
+
+        <!-- LIVE PERFORMANCE LEDGER STATS -->
+        <section class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Total Leads</div>
+                <div id="stat-agent-leads" class="stat-value">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Gross Earned</div>
+                <div id="stat-agent-gross" class="stat-value" style="color: #38bdf8;">₹0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Total Received</div>
+                <div id="stat-agent-paid" class="stat-value" style="color: #10b981;">₹0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Balance Due</div>
+                <div id="stat-agent-balance" class="stat-value" style="color: #f59e0b;">₹0</div>
+            </div>
+        </section>
+
+        <!-- FORM: ONBOARD NEW CLIENT -->
+        <section class="content-panel">
+            <h2>📝 Fast-Track Family Onboarding</h2>
+            <form id="agent-onboard-form" style="margin-top: 15px;">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="agent-parent-name">Parent Name</label>
+                        <input type="text" id="agent-parent-name" placeholder="Enter full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="agent-parent-phone">WhatsApp Number</label>
+                        <input type="text" id="agent-parent-phone" placeholder="10-digit mobile" pattern="[0-9]{10}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="agent-child-name">Student Name</label>
+                        <input type="text" id="agent-child-name" placeholder="Child's first name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="agent-child-class">Class Assignment</label>
+                        <select id="agent-child-class" required>
+                            <option value="" disabled selected>Select level</option>
+                            <option value="Nursery">Nursery</option>
+                            <option value="LKG">LKG</option>
+                            <option value="UKG">UKG</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Registration Node 🚀</button>
+            </form>
+        </section>
+
+        <!-- LEDGER: AGENT'S OWN ENTRIES -->
+        <section class="content-panel">
+            <h2>📋 Your Onboarded Registry Records</h2>
+            <div id="agent-ledger-container" class="ledger-list">
+                <div style="text-align: center; color: #64748b; padding: 15px;">Streaming your secured field records...</div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Firebase Wiring Links -->
+    <script type="module" src="agent-gateway.js?v=1.0"></script>
+</body>
+</html>
