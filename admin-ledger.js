@@ -1,6 +1,6 @@
 // admin-ledger.js
 import { auth, db } from "./firebase-config.js";
-import { doc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { doc, collection, getDocs, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 let cachedStudents = [];
 let cachedParents = {};
@@ -12,6 +12,7 @@ const statTotalStudents = document.getElementById('stat-total-students');
 const statTotalAgents = document.getElementById('stat-total-agents');
 const statTotalRuns = document.getElementById('stat-total-runs');
 const onboardForm = document.getElementById('onboard-form');
+const addAgentForm = document.getElementById('add-agent-form'); // 💼 Added Agent Form Linker
 const filterSearchInput = document.getElementById('filter-search-input');
 const filterClassDropdown = document.getElementById('filter-class-dropdown');
 const btnExportCSV = document.getElementById('btn-export-csv');
@@ -24,6 +25,7 @@ window.addEventListener('adminAuthenticated', () => {
 async function loadComprehensiveSystemData() {
     try {
         if (recordsTableBody) recordsTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Streaming database ledger...</td></tr>';
+        if (agentsTableBody) agentsTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Awaiting field agent matrix...</td></tr>';
         
         const [studentsSnap, usersSnap, agentsSnap] = await Promise.all([
             getDocs(collection(db, "students")),
@@ -84,21 +86,95 @@ function renderSystemRecordsTable(studentsArray) {
     recordsTableBody.innerHTML = rowsHTML;
 }
 
+// 👑 FIXED: Ab agents registry table bilkul 8 columns ke structure me render hogi
 function renderAgentsManagementTable() {
     if (!agentsTableBody) return;
     let rowsHTML = "";
-    Object.keys(cachedAgents).forEach(id => {
+    
+    const agentKeys = Object.keys(cachedAgents);
+    if (agentKeys.length === 0) {
+        agentsTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #94a3b8;">No agents onboarded yet.</td></tr>';
+        return;
+    }
+
+    const commissionRate = parseInt(document.getElementById('config-commission-rate')?.value) || 50;
+
+    agentKeys.forEach(id => {
         const a = cachedAgents[id];
-        rowsHTML += `<tr><td><strong>${a.name}</strong></td><td>${a.email}</td><td>Active Operational</td></tr>`;
+        
+        // Dynamic calculations based on leads
+        const totalLeads = parseInt(a.totalLeads) || 0;
+        const grossEarnings = totalLeads * commissionRate;
+        const disbursed = parseInt(a.paid) || 0;
+        const balanceDue = grossEarnings - disbursed;
+        const isSuspended = a.status === "Suspended";
+
+        rowsHTML += `
+            <tr id="row-agent-${a.id}">
+                <td><strong>${a.name}</strong></td>
+                <td>${a.email}</td>
+                <td style="text-align: center; font-weight: bold; color: #fff;">${totalLeads}</td>
+                <td style="color: #38bdf8; font-weight: bold;">₹${grossEarnings}</td>
+                <td style="color: #10b981;">₹${disbursed}</td>
+                <td style="color: #f59e0b; font-weight: bold;">₹${balanceDue}</td>
+                <td>
+                    <button class="switch-btn ${isSuspended ? 'status-suspended' : 'status-active'} btn-toggle-agent-status" data-id="${a.id}" data-status="${a.status || 'Active'}">
+                        ${isSuspended ? 'Suspended' : 'Active'}
+                    </button>
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn btn-secondary btn-xs btn-pay-agent" data-id="${a.id}">💳 Record Payout</button>
+                </td>
+            </tr>`;
     });
     agentsTableBody.innerHTML = rowsHTML;
 }
 
-// 100% SAFE CONTEXT INTERCEPTOR FOR DIRECT EDIT/SAVE WORKFLOW
+// ➕ NEW: Naye Field Agent Add Karne Ka Live Submit Handler
+if (addAgentForm) {
+    addAgentForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const agentName = document.getElementById('new-agent-name').value.trim();
+        const agentEmail = document.getElementById('new-agent-email').value.trim().toLowerCase();
+        const submitBtn = addAgentForm.querySelector('button[type="submit"]');
+
+        if (!agentName || !agentEmail) return;
+
+        try {
+            submitBtn.innerText = "Authorizing...";
+            submitBtn.disabled = true;
+
+            // Agent collection node creation
+            await setDoc(doc(db, "agents", agentEmail), {
+                name: agentName,
+                email: agentEmail,
+                status: "Active",
+                totalLeads: 0,
+                paid: 0,
+                createdAt: new Date()
+            });
+
+            alert(`✨ Success: ${agentName} has been authorized as field staff!`);
+            addAgentForm.reset();
+            loadComprehensiveSystemData(); // Refresh complete screen
+        } catch (err) {
+            console.error("Agent Onboarding Error:", err);
+            alert("Failed to authorize agent: " + err.message);
+        } finally {
+            submitBtn.innerText = "Authorize Agent";
+            submitBtn.disabled = false;
+        }
+    });
+}
+
+// 100% SAFE CONTEXT INTERCEPTOR FOR DIRECT EDIT/SAVE & AGENT CONTROLS
 document.addEventListener('click', async (e) => {
     const editBtn = e.target.closest('.btn-edit-student');
     const deleteBtn = e.target.closest('.btn-delete-student');
+    const statusBtn = e.target.closest('.btn-toggle-agent-status');
+    const payBtn = e.target.closest('.btn-pay-agent');
     
+    // 1. STUDENT EDIT/SAVE
     if (editBtn) {
         e.preventDefault();
         const studentId = editBtn.getAttribute('data-id');
@@ -133,6 +209,7 @@ document.addEventListener('click', async (e) => {
         }
     }
 
+    // 2. STUDENT DELETE
     if (deleteBtn) {
         e.preventDefault();
         const studentId = deleteBtn.getAttribute('data-id');
@@ -140,6 +217,39 @@ document.addEventListener('click', async (e) => {
             try { await deleteDoc(doc(db, "students", studentId)); loadComprehensiveSystemData(); } 
             catch (err) { alert("Delete failed: " + err.message); }
         }
+    }
+
+    // 3. 💼 TOGGLE AGENT STATUS (ACTIVE/SUSPENDED)
+    if (statusBtn) {
+        e.preventDefault();
+        const agentId = statusBtn.getAttribute('data-id');
+        const currentStatus = statusBtn.getAttribute('data-status');
+        const newStatus = currentStatus === "Suspended" ? "Active" : "Suspended";
+        
+        if (confirm(`Change agent privilege status to ${newStatus}?`)) {
+            try {
+                await updateDoc(doc(db, "agents", agentId), { status: newStatus });
+                loadComprehensiveSystemData();
+            } catch (err) { alert("Status sync error: " + err.message); }
+        }
+    }
+
+    // 4. 💳 RECORD AGENT PAYOUT
+    if (payBtn) {
+        e.preventDefault();
+        const agentId = payBtn.getAttribute('data-id');
+        const currentAgent = cachedAgents[agentId];
+        const currentPaid = parseInt(currentAgent.paid) || 0;
+        
+        const payoutAmount = prompt(`Enter amount paid to ${currentAgent.name}:`);
+        if (payoutAmount === null || payoutAmount.trim() === "" || isNaN(payoutAmount)) return;
+
+        try {
+            const finalPaidSum = currentPaid + parseInt(payoutAmount);
+            await updateDoc(doc(db, "agents", agentId), { paid: finalPaidSum });
+            alert("💵 Payout ledger transaction complete!");
+            loadComprehensiveSystemData();
+        } catch (err) { alert("Payout update failed: " + err.message); }
     }
 });
 
@@ -156,3 +266,7 @@ function filterRegistrySearch() {
 }
 if (filterSearchInput) filterSearchInput.addEventListener('input', filterRegistrySearch);
 if (filterClassDropdown) filterClassDropdown.addEventListener('change', filterRegistrySearch);
+
+// Scalar commission input automatic tracking
+const commRateInput = document.getElementById('config-commission-rate');
+if (commRateInput) commRateInput.addEventListener('input', renderAgentsManagementTable);
