@@ -20,11 +20,10 @@ const agentLedgerContainer = document.getElementById('agent-ledger-container');
 
 // Page load hote hi seedhe testing workspace khol do
 document.addEventListener('DOMContentLoaded', () => {
-    if (agentAuthSection) agentAuthSection.style.display = 'none';
-    if (agentWorkspace) agentWorkspace.style.display = 'block';
-    if (agentWelcomeText) agentWelcomeText.innerText = `Operator: ${dummyAgentName} (${dummyAgentEmail}) 🚀`;
-    
-    // Live data fetch karo cloud se
+    // HTML inline script ne pehle hi elements switch kar diye hain, bas welcome text aur data load karo
+    if (agentWelcomeText) {
+        agentWelcomeText.innerText = `Operator: ${dummyAgentName} (${dummyAgentEmail}) 🚀`;
+    }
     loadAgentDashboardData();
 });
 
