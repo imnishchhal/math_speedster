@@ -43,8 +43,8 @@
         /* Dynamic Input Controls and Filter Layout Containers */
         .filter-row { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
         .search-control { flex: 1; min-width: 200px; position: relative; }
-        input[type="text"], select, textarea { width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; color: #fff; font-size: 0.95rem; outline: none; transition: border-color 0.2s; }
-        input[type="text"]:focus, select:focus { border-color: #38bdf8; }
+        input[type="text"], input[type="email"], input[type="number"], select, textarea { width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; color: #fff; font-size: 0.95rem; outline: none; transition: border-color 0.2s; }
+        input[type="text"]:focus, input[type="email"]:focus, select:focus { border-color: #38bdf8; }
         
         /* Form Field Components Layout CSS */
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
@@ -169,7 +169,25 @@
 
         <section id="panel-agents" class="panel-card">
             <h2>Field Staff Operations Registry</h2>
-            <div class="table-container" style="margin-top: 15px;">
+            
+            <div style="background: #1e293b; padding: 20px; border-radius: 10px; margin-top: 15px; margin-bottom: 25px; border: 1px solid #334155;">
+                <h3 style="font-size: 1rem; color: #38bdf8; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;">➕ Add New Field Agent</h3>
+                <form id="add-agent-form">
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label style="display:block; font-size: 0.75rem; color:#94a3b8; margin-bottom: 6px; font-weight:600; text-transform:uppercase;">Agent Full Name</label>
+                            <input type="text" id="new-agent-name" placeholder="e.g. Piyush Dwivedi" required style="padding: 10px;">
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <label style="display:block; font-size: 0.75rem; color:#94a3b8; margin-bottom: 6px; font-weight:600; text-transform:uppercase;">Google Auth Email</label>
+                            <input type="email" id="new-agent-email" placeholder="agent.email@gmail.com" required style="padding: 10px;">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="padding: 11px 24px; font-size: 0.85rem;">Authorize Agent</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-container">
                 <table>
                     <thead>
                         <tr>
