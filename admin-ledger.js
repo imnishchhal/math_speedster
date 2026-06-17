@@ -289,7 +289,7 @@ document.addEventListener('click', async (e) => {
         }
     }
 
-    // 4. 💳 RECORD AGENT PAYOUT
+    // 4. 💳 RECORD AGENT PAYOUT (WITH PERMANENT HISTORY LOGGING)
     if (payBtn) {
         e.preventDefault();
         const agentId = payBtn.getAttribute('data-id');
@@ -299,12 +299,32 @@ document.addEventListener('click', async (e) => {
         const payoutAmount = prompt(`Enter amount paid to ${currentAgent.name}:`);
         if (payoutAmount === null || payoutAmount.trim() === "" || isNaN(payoutAmount)) return;
 
+        const amt = parseInt(payoutAmount);
+
         try {
-            const finalPaidSum = currentPaid + parseInt(payoutAmount);
+            payBtn.innerText = "⏳ Log...";
+            
+            // A. Agent ke main balance me paisa jodo (Ye freeze rahega)
+            const finalPaidSum = currentPaid + amt;
             await updateDoc(doc(db, "agents", agentId), { paid: finalPaidSum });
-            alert("💵 Payout ledger transaction complete!");
+
+            // B. 🔥 HISTORY LOG: Cloud par ek alag raseed generate karo date ke sath
+            const { setDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+            const historyId = `${agentId}_${Date.now()}`; // Unique Transaction ID
+            
+            await setDoc(doc(db, "payout_history", historyId), {
+                agentEmail: agentId,
+                agentName: currentAgent.name,
+                amountGiven: amt,
+                paymentDate: new Date(),
+                rateAtPayment: parseInt(document.getElementById('config-commission-rate')?.value) || 50
+            });
+
+            alert(`💵 ₹${amt} successfully disbursed to ${currentAgent.name} and logged in history!`);
             loadComprehensiveSystemData();
-        } catch (err) { alert("Payout update failed: " + err.message); }
+        } catch (err) { 
+            alert("Payout update failed: " + err.message); 
+        }
     }
 });
 
