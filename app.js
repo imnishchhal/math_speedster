@@ -3,9 +3,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { initializeFirestore, memoryLocalCache, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
-    authDomain: "math-speedster.firebaseapp.com",
-    projectId: "math-speedster",
-    storageBucket: "math-speedster.appspot.com",
+    authDomain: "math-speed-web.firebaseapp.com",
+    projectId: "math-speed-web",
+    storageBucket: "math-speed-web.appspot.com",
 };
 
 const app = initializeApp(firebaseConfig);
