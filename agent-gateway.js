@@ -1,4 +1,4 @@
-// agent-gateway.js (v5.0 - SAFE FETCH & REAL-TIME ONBOARDING)
+// agent-gateway.js (v6.0 - SAFE FETCH, FULL PG-CLASS 8 ONBOARDING & RELIABLE LOGOUT)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
     initializeFirestore, 
@@ -6,10 +6,10 @@ import {
     doc, 
     collection, 
     getDocs, 
-    getDoc, 
     setDoc 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// 🔥 FIREBASE CONFIG (math-speed-web)
 const firebaseConfig = {
     authDomain: "math-speed-web.firebaseapp.com",
     projectId: "math-speed-web",
@@ -31,14 +31,25 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupAgentEvents() {
-    // Logout
-    document.getElementById('btn-agent-logout')?.addEventListener('click', () => {
-        localStorage.removeItem('ms_agent_email');
-        alert("Logged out successfully.");
-        location.reload();
-    });
+    // 🔒 Reliable Logout Event
+    const logoutBtn = document.getElementById('btn-agent-logout');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Clear all local session data
+            localStorage.removeItem('ms_agent_email');
+            localStorage.removeItem('ms_parent_phone');
+            localStorage.removeItem('ms_active_student');
+            
+            alert("Logged out successfully!");
+            
+            // Hard Reload & Redirect to clean state
+            window.location.href = window.location.pathname + '?v=' + Date.now();
+        });
+    }
 
-    // Form Submission
+    // 📝 Form Submission Handler
     const form = document.getElementById('agent-onboard-form');
     if (form) {
         form.addEventListener('submit', async (e) => {
@@ -58,7 +69,7 @@ function setupAgentEvents() {
             const studentId = `student_${Date.now()}`;
 
             try {
-                // 1. Create/Update Parent Doc
+                // 1. Save Parent Node
                 await setDoc(doc(db, "users", parentId), {
                     name: parentName,
                     phone: phone,
@@ -66,7 +77,7 @@ function setupAgentEvents() {
                     createdAt: new Date()
                 }, { merge: true });
 
-                // 2. Create Student Doc
+                // 2. Save Student Node
                 await setDoc(doc(db, "students", studentId), {
                     name: childName,
                     class: childClass,
@@ -79,13 +90,13 @@ function setupAgentEvents() {
                     createdAt: new Date()
                 });
 
-                alert(`✅ Registration Successful for ${childName} (${childClass})!`);
+                alert(`✅ Registered ${childName} (${childClass}) successfully!`);
                 form.reset();
                 loadAgentDashboard();
 
             } catch (err) {
                 console.error("Onboarding Error:", err);
-                alert("Failed to register. Check internet/permissions: " + err.message);
+                alert("Registration failed: " + err.message);
             }
         });
     }
@@ -106,7 +117,6 @@ async function loadAgentDashboard() {
 
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            // Match agent if tagged, or display overall count
             if (data.onboardedBy === activeAgentEmail || !data.onboardedBy) {
                 count++;
                 html += `
@@ -125,7 +135,6 @@ async function loadAgentDashboard() {
 
         if (statLeads) statLeads.innerText = count;
         
-        // Calculated Commission Example (e.g. ₹50 per lead)
         const grossEarned = count * 50;
         if (statGross) statGross.innerText = `₹${grossEarned}`;
         if (statPaid) statPaid.innerText = `₹0`;
