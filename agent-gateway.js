@@ -1,120 +1,142 @@
-// agent-gateway.js (FORCED TESTING BUNDLE - DIRECT FIRESTORE INJECTION)
+// agent-gateway.js (v5.0 - SAFE FETCH & REAL-TIME ONBOARDING)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, doc, collection, getDocs, query, where, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { 
+    initializeFirestore, 
+    memoryLocalCache, 
+    doc, 
+    collection, 
+    getDocs, 
+    getDoc, 
+    setDoc 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
-    authDomain: "math-speedster.firebaseapp.com",
-    projectId: "math-speedster",
-    storageBucket: "math-speedster.appspot.com",
+    authDomain: "math-speed-web.firebaseapp.com",
+    projectId: "math-speed-web",
+    storageBucket: "math-speed-web.appspot.com",
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = initializeFirestore(app, { localCache: memoryLocalCache() });
 
-const dummyAgentEmail = "agent@mail.com"; 
-const dummyAgentName = "testagent";
+// Agent Session Check
+let activeAgentEmail = localStorage.getItem('ms_agent_email') || "demo.agent@mathspeed.com";
 
 document.addEventListener('DOMContentLoaded', () => {
-    const welcomeText = document.getElementById('agent-welcome-text');
-    if (welcomeText) welcomeText.innerText = `Operator: ${dummyAgentName} (${dummyAgentEmail}) 🚀`;
+    const welcomeTxt = document.getElementById('agent-welcome-text');
+    if (welcomeTxt) welcomeTxt.innerText = `Logged in as: ${activeAgentEmail}`;
 
-    loadAgentDashboardData();
-    setupFormListener();
+    loadAgentDashboard();
+    setupAgentEvents();
 });
 
-async function loadAgentDashboardData() {
-    let totalLeads = 0;
-    let disbursedPaid = 0;
-    const currentCommissionRate = 50;
+function setupAgentEvents() {
+    // Logout
+    document.getElementById('btn-agent-logout')?.addEventListener('click', () => {
+        localStorage.removeItem('ms_agent_email');
+        alert("Logged out successfully.");
+        location.reload();
+    });
 
-    try {
-        const agentDocSnap = await getDoc(doc(db, "agents", dummyAgentEmail));
-        if (agentDocSnap.exists()) {
-            const agentData = agentDocSnap.data();
-            totalLeads = parseInt(agentData.totalLeads) || 0;
-            disbursedPaid = parseInt(agentData.paid) || 0;
-        }
-    } catch (err) {
-        console.warn("Bypassing agent metadata fetch:", err);
+    // Form Submission
+    const form = document.getElementById('agent-onboard-form');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const parentName = document.getElementById('agent-parent-name').value.trim();
+            const phone = document.getElementById('agent-parent-phone').value.trim();
+            const childName = document.getElementById('agent-child-name').value.trim();
+            const childClass = document.getElementById('agent-child-class').value;
+
+            if (phone.length !== 10) {
+                alert("Please enter a valid 10-digit mobile number!");
+                return;
+            }
+
+            const parentId = `parent_${phone}`;
+            const studentId = `student_${Date.now()}`;
+
+            try {
+                // 1. Create/Update Parent Doc
+                await setDoc(doc(db, "users", parentId), {
+                    name: parentName,
+                    phone: phone,
+                    role: "parent",
+                    createdAt: new Date()
+                }, { merge: true });
+
+                // 2. Create Student Doc
+                await setDoc(doc(db, "students", studentId), {
+                    name: childName,
+                    class: childClass,
+                    parentId: parentId,
+                    highScore: 0,
+                    lastScore: 0,
+                    gamesCompleted: 0,
+                    mathSpeedScores: [],
+                    onboardedBy: activeAgentEmail,
+                    createdAt: new Date()
+                });
+
+                alert(`✅ Registration Successful for ${childName} (${childClass})!`);
+                form.reset();
+                loadAgentDashboard();
+
+            } catch (err) {
+                console.error("Onboarding Error:", err);
+                alert("Failed to register. Check internet/permissions: " + err.message);
+            }
+        });
     }
+}
 
-    const grossEarnings = totalLeads * currentCommissionRate;
-    const balanceDue = grossEarnings - disbursedPaid;
-
+// Safe Dashboard Fetch (No Stream Blockage)
+async function loadAgentDashboard() {
+    const ledgerContainer = document.getElementById('agent-ledger-container');
     const statLeads = document.getElementById('stat-agent-leads');
     const statGross = document.getElementById('stat-agent-gross');
     const statPaid = document.getElementById('stat-agent-paid');
     const statBalance = document.getElementById('stat-agent-balance');
 
-    if (statLeads) statLeads.innerText = totalLeads;
-    if (statGross) statGross.innerText = `₹${grossEarnings}`;
-    if (statPaid) statPaid.innerText = `₹${disbursedPaid}`;
-    if (statBalance) statBalance.innerText = `₹${balanceDue}`;
-
-    const agentLedgerContainer = document.getElementById('agent-ledger-container');
     try {
-        const studentQuery = query(collection(db, "students"), where("onboardedBy", "==", dummyAgentEmail));
-        const querySnapshot = await getDocs(studentQuery);
-        
-        let ledgerHTML = "";
-        if (querySnapshot.empty) {
-            ledgerHTML = '<div style="text-align: center; color: #64748b; padding: 15px;">No family profiles onboarded by you yet.</div>';
-        } else {
-            querySnapshot.forEach((docSnap) => {
-                const s = docSnap.data();
-                ledgerHTML += `
+        const querySnapshot = await getDocs(collection(db, "students"));
+        let count = 0;
+        let html = '';
+
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            // Match agent if tagged, or display overall count
+            if (data.onboardedBy === activeAgentEmail || !data.onboardedBy) {
+                count++;
+                html += `
                     <div class="ledger-card">
                         <div class="ledger-info">
-                            <h4>${s.name || 'Student'}</h4>
-                            <p>Parent Phone: ${s.parentId || 'N/A'}</p>
+                            <h4>${data.name || 'Unnamed'} <span class="badge">${data.class || 'N/A'}</span></h4>
+                            <p>Parent Phone: ${data.parentId ? data.parentId.replace('parent_', '') : 'N/A'}</p>
                         </div>
-                        <span class="badge">${s.class || 'N/A'}</span>
+                        <div style="text-align: right;">
+                            <div style="color: #38bdf8; font-weight: 700;">${data.highScore || 0} pts</div>
+                            <small style="color: #64748b;">${data.gamesCompleted || 0} played</small>
+                        </div>
                     </div>`;
-            });
+            }
+        });
+
+        if (statLeads) statLeads.innerText = count;
+        
+        // Calculated Commission Example (e.g. ₹50 per lead)
+        const grossEarned = count * 50;
+        if (statGross) statGross.innerText = `₹${grossEarned}`;
+        if (statPaid) statPaid.innerText = `₹0`;
+        if (statBalance) statBalance.innerText = `₹${grossEarned}`;
+
+        if (ledgerContainer) {
+            ledgerContainer.innerHTML = count > 0 ? html : '<div style="text-align: center; color: #64748b; padding: 15px;">No students registered yet.</div>';
         }
-        if (agentLedgerContainer) agentLedgerContainer.innerHTML = ledgerHTML;
+
     } catch (err) {
-        console.error("Ledger error:", err);
-        if (agentLedgerContainer) agentLedgerContainer.innerHTML = '<div style="text-align: center; color: #f87171; padding: 15px;">⚠️ Ready for new onboarding entries.</div>';
+        console.warn("Dashboard load fallback:", err);
+        if (ledgerContainer) ledgerContainer.innerHTML = '<div style="text-align: center; color: #f87171; padding: 15px;">Failed to load records.</div>';
     }
-}
-
-function setupFormListener() {
-    const agentOnboardForm = document.getElementById('agent-onboard-form');
-    if (!agentOnboardForm) return;
-
-    agentOnboardForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const parentName = document.getElementById('agent-parent-name')?.value.trim();
-        const parentPhone = document.getElementById('agent-parent-phone')?.value.trim();
-        const childName = document.getElementById('agent-child-name')?.value.trim();
-        const childClass = document.getElementById('agent-child-class')?.value;
-        const submitBtn = agentOnboardForm.querySelector('button[type="submit"]');
-
-        try {
-            if (submitBtn) { submitBtn.innerText = "⚡ Committing Node..."; submitBtn.disabled = true; }
-
-            await setDoc(doc(db, "users", parentPhone), { name: parentName, phone: parentPhone, role: "parent", createdAt: new Date() }, { merge: true });
-
-            const studentId = `${parentPhone}_${childName.replace(/\s+/g, '').toLowerCase()}`;
-            await setDoc(doc(db, "students", studentId), {
-                id: studentId, parentId: parentPhone, name: childName, class: childClass, highScore: 0, lastScore: 0, gamesCompleted: 0, gamesAborted: 0, onboardedBy: dummyAgentEmail, createdAt: new Date()
-            });
-
-            const agentDocRef = doc(db, "agents", dummyAgentEmail);
-            const agentDocSnap = await getDoc(agentDocRef);
-            let currentLeads = 0;
-            if (agentDocSnap.exists()) currentLeads = parseInt(agentDocSnap.data().totalLeads) || 0;
-            
-            await updateDoc(agentDocRef, { totalLeads: currentLeads + 1 });
-
-            alert(`🎉 Success: ${childName} onboarded successfully!`);
-            agentOnboardForm.reset();
-            loadAgentDashboardData();
-        } catch (err) {
-            alert("Onboarding failed: " + err.message);
-        } finally {
-            if (submitBtn) { submitBtn.innerText = "Submit Registration Node 🚀"; submitBtn.disabled = false; }
-        }
-    });
 }
