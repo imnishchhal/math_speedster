@@ -1,7 +1,17 @@
-// app.js (GAME ENGINE v6.0 - GRADE ADAPTIVE PG-CLASS 8)
+// app.js (GAME ENGINE v7.0 - PG TO CLASS 8 GRADE ADAPTIVE)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { initializeFirestore, memoryLocalCache, doc, collection, getDocs, query, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { 
+    initializeFirestore, 
+    memoryLocalCache, 
+    doc, 
+    collection, 
+    getDocs, 
+    getDoc, 
+    updateDoc, 
+    arrayUnion 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// 🔥 FIREBASE CONFIG
 const firebaseConfig = {
     authDomain: "math-speed-web.firebaseapp.com",
     projectId: "math-speed-web",
@@ -103,7 +113,7 @@ function setupEventListeners() {
     });
 }
 
-// 👨‍👩‍👧 3. LOAD PROFILES
+// 👨‍👩‍👧 3. LOAD STUDENT PROFILES
 async function loadStudentProfiles(phone) {
     if (authScreen) authScreen.style.display = 'none';
     if (studentSelectScreen) studentSelectScreen.style.display = 'block';
@@ -123,7 +133,7 @@ async function loadStudentProfiles(phone) {
             const pId = String(s.parentId || '');
             if (pId.includes(phone)) {
                 matchedCount++;
-                const studentClass = s.class || 'Class 1';
+                const studentClass = s.class || 'UKG';
                 html += `
                     <div class="profile-card" onclick="selectStudent('${docSnap.id}', '${s.name}', '${studentClass}', ${s.highScore || 0})">
                         <h3>${s.name}</h3>
@@ -157,8 +167,11 @@ function showGameArena() {
     if (gameArena) gameArena.style.display = 'block';
     if (btnSwitchUser) btnSwitchUser.style.display = 'inline-block';
 
+    const studentClass = (activeStudent?.class || 'UKG').trim().toUpperCase();
+    const isEarlyYears = ['PG', 'PLAYGROUP', 'NURSERY', 'LKG', 'UKG'].includes(studentClass);
+
     score = 0;
-    timeLeft = 30;
+    timeLeft = isEarlyYears ? 45 : 30; // 45s for PG-UKG, 30s for Class 1-8
     
     document.getElementById('game-score').innerText = score;
     document.getElementById('game-timer').innerText = timeLeft;
@@ -173,10 +186,11 @@ function showGameArena() {
     }, 1000);
 }
 
-// 🧠 5. GRADE-BASED QUESTION GENERATOR (PG to Class 8)
+// 🧠 5. GRADE-BASED QUESTION ENGINE (PG to Class 8)
 function generateEquationByGrade() {
-    const studentClass = (activeStudent?.class || 'Class 1').trim().toUpperCase();
+    const studentClass = (activeStudent?.class || 'UKG').trim().toUpperCase();
     const isEarlyYears = ['PG', 'PLAYGROUP', 'NURSERY', 'LKG', 'UKG'].includes(studentClass);
+    const isPrimary12 = ['CLASS 1', '1', '1ST', 'CLASS 2', '2', '2ND'].includes(studentClass);
 
     const eqBox = document.getElementById('equation-box');
     const visualBox = document.getElementById('visual-image-box');
@@ -184,89 +198,114 @@ function generateEquationByGrade() {
     const directInputArea = document.getElementById('direct-input-area');
 
     if (isEarlyYears) {
-        // --- 🐣 PG TO UKG: VISUAL MCQ MODE ---
-        directInputArea.style.display = 'none';
-        visualBox.style.display = 'block';
-        mcqContainer.style.display = 'grid';
+        // --- 🐣 PG TO UKG: VISUAL EMOJI MCQ MODE ---
+        if (directInputArea) directInputArea.style.display = 'none';
+        if (visualBox) visualBox.style.display = 'block';
+        if (mcqContainer) mcqContainer.style.display = 'grid';
 
         const randomIcon = visualIcons[Math.floor(Math.random() * visualIcons.length)];
-        const questionType = Math.random() > 0.5 ? 'count' : 'add';
+        const isCount = Math.random() > 0.4;
 
-        if (questionType === 'count') {
-            const count = Math.floor(Math.random() * 6) + 1; // 1 to 6
+        if (isCount) {
+            const count = Math.floor(Math.random() * 5) + 1; // 1 to 5
             currentEquation = { ans: count };
-            
-            eqBox.innerText = "Count the objects:";
-            visualBox.innerText = randomIcon.repeat(count);
+            if (eqBox) eqBox.innerText = "Count the objects:";
+            if (visualBox) visualBox.innerText = randomIcon.repeat(count);
         } else {
             const num1 = Math.floor(Math.random() * 3) + 1;
             const num2 = Math.floor(Math.random() * 3) + 1;
             currentEquation = { ans: num1 + num2 };
-
-            eqBox.innerText = "How many in total?";
-            visualBox.innerText = `${randomIcon.repeat(num1)}  +  ${randomIcon.repeat(num2)}`;
+            if (eqBox) eqBox.innerText = "How many in total?";
+            if (visualBox) visualBox.innerText = `${randomIcon.repeat(num1)}  +  ${randomIcon.repeat(num2)}`;
         }
 
-        // Generate MCQ Options (4 Choices)
-        const options = generateMCQOptions(currentEquation.ans);
-        mcqContainer.innerHTML = '';
-        options.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = 'mcq-btn';
-            btn.innerText = opt;
-            btn.onclick = () => handleMCQAnswer(opt);
-            mcqContainer.appendChild(btn);
-        });
+        renderMCQOptions(currentEquation.ans);
+
+    } else if (isPrimary12) {
+        // --- ✏️ CLASS 1 & 2: SIMPLE MCQ ARITHMETIC ---
+        if (directInputArea) directInputArea.style.display = 'none';
+        if (visualBox) visualBox.style.display = 'none';
+        if (mcqContainer) mcqContainer.style.display = 'grid';
+
+        let num1 = Math.floor(Math.random() * 10) + 1;
+        let num2 = Math.floor(Math.random() * 10) + 1;
+        const op = Math.random() > 0.5 ? '+' : '-';
+        
+        if (op === '-' && num1 < num2) [num1, num2] = [num2, num1];
+        const ans = op === '+' ? num1 + num2 : num1 - num2;
+
+        currentEquation = { ans };
+        if (eqBox) eqBox.innerText = `${num1} ${op} ${num2} = ?`;
+
+        renderMCQOptions(ans);
 
     } else {
-        // --- 🎒 CLASS 1 TO CLASS 8: ARITHMETIC MODE ---
-        visualBox.style.display = 'none';
-        mcqContainer.style.display = 'none';
-        directInputArea.style.display = 'flex';
+        // --- 🎒 CLASS 3 TO CLASS 8: DIRECT INPUT ARITHMETIC ---
+        if (visualBox) visualBox.style.display = 'none';
+        if (mcqContainer) mcqContainer.style.display = 'none';
+        if (directInputArea) directInputArea.style.display = 'flex';
 
         let num1, num2, op = '+', ans;
 
-        if (studentClass.includes('1') || studentClass.includes('2')) {
-            num1 = Math.floor(Math.random() * 10) + 1;
-            num2 = Math.floor(Math.random() * 10) + 1;
-            op = Math.random() > 0.5 ? '+' : '-';
-            if (op === '-' && num1 < num2) [num1, num2] = [num2, num1]; // Keep positive
-            ans = op === '+' ? num1 + num2 : num1 - num2;
-
-        } else if (studentClass.includes('3') || studentClass.includes('4')) {
+        if (studentClass.includes('3') || studentClass.includes('4')) {
             const ops = ['+', '-', '×'];
             op = ops[Math.floor(Math.random() * ops.length)];
             if (op === '×') {
-                num1 = Math.floor(Math.random() * 10) + 1;
+                num1 = Math.floor(Math.random() * 9) + 2;
                 num2 = Math.floor(Math.random() * 9) + 1;
                 ans = num1 * num2;
             } else {
-                num1 = Math.floor(Math.random() * 50) + 10;
+                num1 = Math.floor(Math.random() * 40) + 10;
                 num2 = Math.floor(Math.random() * 30) + 1;
                 if (op === '-' && num1 < num2) [num1, num2] = [num2, num1];
                 ans = op === '+' ? num1 + num2 : num1 - num2;
             }
 
-        } else { // Class 5 to Class 8
+        } else if (studentClass.includes('5') || studentClass.includes('6')) {
             const ops = ['+', '-', '×', '÷'];
             op = ops[Math.floor(Math.random() * ops.length)];
             if (op === '÷') {
-                num2 = Math.floor(Math.random() * 9) + 2;
-                ans = Math.floor(Math.random() * 10) + 1;
-                num1 = num2 * ans; // Ensure clean integer division
+                num2 = Math.floor(Math.random() * 8) + 2;
+                ans = Math.floor(Math.random() * 9) + 1;
+                num1 = num2 * ans;
             } else if (op === '×') {
-                num1 = Math.floor(Math.random() * 15) + 2;
+                num1 = Math.floor(Math.random() * 12) + 2;
                 num2 = Math.floor(Math.random() * 12) + 2;
                 ans = num1 * num2;
             } else {
-                num1 = Math.floor(Math.random() * 100) + 10;
-                num2 = Math.floor(Math.random() * 100) + 10;
+                num1 = Math.floor(Math.random() * 80) + 10;
+                num2 = Math.floor(Math.random() * 50) + 10;
+                if (op === '-' && num1 < num2) [num1, num2] = [num2, num1];
                 ans = op === '+' ? num1 + num2 : num1 - num2;
+            }
+
+        } else { // Class 7 & Class 8 (Integers & Squares)
+            const type = Math.floor(Math.random() * 3);
+            if (type === 0) { // Square Root / Square
+                const base = Math.floor(Math.random() * 10) + 2;
+                ans = base * base;
+                eqBox.innerText = `${base}² = ?`;
+                op = 'square';
+            } else if (type === 1) { // Negative Integer Multiplication
+                num1 = (Math.floor(Math.random() * 8) + 1) * -1;
+                num2 = Math.floor(Math.random() * 8) + 1;
+                ans = num1 * num2;
+                eqBox.innerText = `(${num1}) × ${num2} = ?`;
+                op = 'integer';
+            } else { // Mixed Division
+                num2 = Math.floor(Math.random() * 12) + 2;
+                ans = Math.floor(Math.random() * 12) + 1;
+                num1 = num2 * ans;
+                eqBox.innerText = `${num1} ÷ ${num2} = ?`;
+                op = '÷';
             }
         }
 
+        if (op !== 'square' && op !== 'integer') {
+            if (eqBox) eqBox.innerText = `${num1} ${op} ${num2} = ?`;
+        }
+
         currentEquation = { ans };
-        eqBox.innerText = `${num1} ${op} ${num2} = ?`;
         
         const inputField = document.getElementById('user-answer');
         if (inputField) {
@@ -276,22 +315,36 @@ function generateEquationByGrade() {
     }
 }
 
-// Generate 4 Unique Options for Early Years MCQ
-function generateMCQOptions(correctAns) {
+// Generate 4 Unique Options for MCQ
+function renderMCQOptions(correctAns) {
+    const mcqContainer = document.getElementById('mcq-options-container');
+    if (!mcqContainer) return;
+
     const opts = new Set([correctAns]);
     while (opts.size < 4) {
         let wrong = correctAns + (Math.floor(Math.random() * 5) - 2);
-        if (wrong > 0 && wrong !== correctAns) opts.add(wrong);
+        if (wrong >= 0 && wrong !== correctAns) opts.add(wrong);
         else opts.add(correctAns + opts.size);
     }
-    return Array.from(opts).sort(() => Math.random() - 0.5);
+    
+    const sortedOptions = Array.from(opts).sort(() => Math.random() - 0.5);
+
+    mcqContainer.innerHTML = '';
+    sortedOptions.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'mcq-btn';
+        btn.innerText = opt;
+        btn.onclick = () => handleMCQAnswer(opt);
+        mcqContainer.appendChild(btn);
+    });
 }
 
 // Answer Handlers
 function handleMCQAnswer(selectedVal) {
     if (selectedVal === currentEquation.ans) {
         score += 10;
-        document.getElementById('game-score').innerText = score;
+        const scoreElem = document.getElementById('game-score');
+        if (scoreElem) scoreElem.innerText = score;
     }
     generateEquationByGrade();
 }
@@ -302,7 +355,8 @@ function checkAnswerDirect() {
     const userAns = parseInt(inputField.value);
     if (!isNaN(userAns) && userAns === currentEquation.ans) {
         score += 10;
-        document.getElementById('game-score').innerText = score;
+        const scoreElem = document.getElementById('game-score');
+        if (scoreElem) scoreElem.innerText = score;
     }
     generateEquationByGrade();
 }
@@ -313,14 +367,16 @@ async function endGame() {
     if (gameArena) gameArena.style.display = 'none';
     if (gameOverScreen) gameOverScreen.style.display = 'block';
 
-    document.getElementById('final-score').innerText = score;
+    const finalScoreElem = document.getElementById('final-score');
+    if (finalScoreElem) finalScoreElem.innerText = score;
 
     if (activeStudent && score > (activeStudent.highScore || 0)) {
         activeStudent.highScore = score;
         localStorage.setItem('ms_active_student', JSON.stringify(activeStudent));
     }
 
-    document.getElementById('personal-high-score').innerText = activeStudent?.highScore || score;
+    const personalHighElem = document.getElementById('personal-high-score');
+    if (personalHighElem) personalHighElem.innerText = activeStudent?.highScore || score;
 
     if (activeStudent?.id) {
         try {
