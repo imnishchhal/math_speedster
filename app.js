@@ -42,28 +42,39 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
 });
 
-// 👑 1. FETCH GLOBAL TOPPER ACROSS ALL STUDENTS
+// 👑 SAFE GLOBAL TOPPER FETCH (No Stream/Query Lock Errors)
 async function fetchGlobalTopper() {
     try {
-        const q = query(collection(db, "students"), orderBy("highScore", "desc"), limit(1));
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await getDocs(collection(db, "students"));
 
         if (!querySnapshot.empty) {
-            const topper = querySnapshot.docs[0].data();
-            const topperName = topper.name || "Anonymous";
-            const topperScore = topper.highScore || 0;
-            const topperClass = topper.class ? `(${topper.class})` : '';
-            
-            globalTopperBadge.innerHTML = `👑 <b>Topper:</b> ${topperName} ${topperClass} - <span style="color: #38bdf8;">${topperScore} pts</span>`;
+            let topStudent = null;
+            let maxScore = -1;
+
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const score = parseInt(data.highScore) || 0;
+                if (score > maxScore) {
+                    maxScore = score;
+                    topStudent = data;
+                }
+            });
+
+            if (topStudent && maxScore >= 0) {
+                const topperName = topStudent.name || "Anonymous";
+                const topperClass = topStudent.class ? `(${topStudent.class})` : '';
+                globalTopperBadge.innerHTML = `👑 <b>Topper:</b> ${topperName} ${topperClass} - <span style="color: #38bdf8;">${maxScore} pts</span>`;
+            } else {
+                globalTopperBadge.innerHTML = `👑 <b>Topper:</b> No scores yet! Be first!`;
+            }
         } else {
-            globalTopperBadge.innerHTML = `👑 <b>Topper:</b> No scores yet! Be the first!`;
+            globalTopperBadge.innerHTML = `👑 <b>Topper:</b> No scores yet! Be first!`;
         }
     } catch (err) {
-        console.warn("Topper fetch failed:", err);
-        globalTopperBadge.innerText = "👑 All-Time Topper: Ready to Play!";
+        console.warn("Topper fetch bypassed:", err);
+        globalTopperBadge.innerHTML = `👑 <b>Topper:</b> Math Speedster Arena 🚀`;
     }
 }
-
 // 🔐 2. AUTH & SESSION LOGIC
 function setupEventListeners() {
     // Auth Form
