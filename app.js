@@ -1,4 +1,4 @@
-// app.js (GAME ENGINE v7.0 - PG TO CLASS 8 GRADE ADAPTIVE)
+// app.js (GAME ENGINE v8.0 - PG TO CLASS 4 MCQ WITH NEGATIVE MARKING | CLASS 5 TO 8 INSTANT INPUT)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
     initializeFirestore, 
@@ -11,7 +11,7 @@ import {
     arrayUnion 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// 🔥 FIREBASE CONFIG
+// 🔥 FIREBASE CONFIG (math-speed-web)
 const firebaseConfig = {
     authDomain: "math-speed-web.firebaseapp.com",
     projectId: "math-speed-web",
@@ -102,10 +102,13 @@ function setupEventListeners() {
         });
     }
 
-    document.getElementById('btn-submit-ans')?.addEventListener('click', checkAnswerDirect);
-    document.getElementById('user-answer')?.addEventListener('keyup', (e) => {
-        if (e.key === 'Enter') checkAnswerDirect();
-    });
+    // Live typing listener for Class 5 to 8 (Instant Auto-Next)
+    const inputField = document.getElementById('user-answer');
+    if (inputField) {
+        inputField.addEventListener('input', checkAnswerLive);
+    }
+
+    document.getElementById('btn-submit-ans')?.addEventListener('click', checkAnswerLive);
 
     document.getElementById('btn-play-again')?.addEventListener('click', () => {
         if (gameOverScreen) gameOverScreen.style.display = 'none';
@@ -171,7 +174,7 @@ function showGameArena() {
     const isEarlyYears = ['PG', 'PLAYGROUP', 'NURSERY', 'LKG', 'UKG'].includes(studentClass);
 
     score = 0;
-    timeLeft = isEarlyYears ? 45 : 30; // 45s for PG-UKG, 30s for Class 1-8
+    timeLeft = isEarlyYears ? 45 : 30;
     
     document.getElementById('game-score').innerText = score;
     document.getElementById('game-timer').innerText = timeLeft;
@@ -186,82 +189,88 @@ function showGameArena() {
     }, 1000);
 }
 
-// 🧠 5. GRADE-BASED QUESTION ENGINE (PG to Class 8)
+// 🧠 5. GRADE-BASED QUESTION ENGINE
 function generateEquationByGrade() {
     const studentClass = (activeStudent?.class || 'UKG').trim().toUpperCase();
+
+    // Categories
     const isEarlyYears = ['PG', 'PLAYGROUP', 'NURSERY', 'LKG', 'UKG'].includes(studentClass);
     const isPrimary12 = ['CLASS 1', '1', '1ST', 'CLASS 2', '2', '2ND'].includes(studentClass);
+    const isPrimary34 = ['CLASS 3', '3', '3RD', 'CLASS 4', '4', '4TH'].includes(studentClass);
 
     const eqBox = document.getElementById('equation-box');
     const visualBox = document.getElementById('visual-image-box');
     const mcqContainer = document.getElementById('mcq-options-container');
     const directInputArea = document.getElementById('direct-input-area');
 
-    if (isEarlyYears) {
-        // --- 🐣 PG TO UKG: VISUAL EMOJI MCQ MODE ---
+    // --- CATEGORY A: PG TO CLASS 4 (ALL MCQ MODE) ---
+    if (isEarlyYears || isPrimary12 || isPrimary34) {
         if (directInputArea) directInputArea.style.display = 'none';
-        if (visualBox) visualBox.style.display = 'block';
         if (mcqContainer) mcqContainer.style.display = 'grid';
 
-        const randomIcon = visualIcons[Math.floor(Math.random() * visualIcons.length)];
-        const isCount = Math.random() > 0.4;
+        if (isEarlyYears) {
+            // PG - UKG: Visual Emojis
+            if (visualBox) visualBox.style.display = 'block';
+            const randomIcon = visualIcons[Math.floor(Math.random() * visualIcons.length)];
+            const isCount = Math.random() > 0.4;
 
-        if (isCount) {
-            const count = Math.floor(Math.random() * 5) + 1; // 1 to 5
-            currentEquation = { ans: count };
-            if (eqBox) eqBox.innerText = "Count the objects:";
-            if (visualBox) visualBox.innerText = randomIcon.repeat(count);
+            if (isCount) {
+                const count = Math.floor(Math.random() * 5) + 1;
+                currentEquation = { ans: count };
+                if (eqBox) eqBox.innerText = "Count the objects:";
+                if (visualBox) visualBox.innerText = randomIcon.repeat(count);
+            } else {
+                const num1 = Math.floor(Math.random() * 3) + 1;
+                const num2 = Math.floor(Math.random() * 3) + 1;
+                currentEquation = { ans: num1 + num2 };
+                if (eqBox) eqBox.innerText = "How many in total?";
+                if (visualBox) visualBox.innerText = `${randomIcon.repeat(num1)}  +  ${randomIcon.repeat(num2)}`;
+            }
+
+        } else if (isPrimary12) {
+            // Class 1 & 2: Addition/Subtraction MCQ
+            if (visualBox) visualBox.style.display = 'none';
+            let num1 = Math.floor(Math.random() * 10) + 1;
+            let num2 = Math.floor(Math.random() * 10) + 1;
+            const op = Math.random() > 0.5 ? '+' : '-';
+            if (op === '-' && num1 < num2) [num1, num2] = [num2, num1];
+            
+            const ans = op === '+' ? num1 + num2 : num1 - num2;
+            currentEquation = { ans };
+            if (eqBox) eqBox.innerText = `${num1} ${op} ${num2} = ?`;
+
         } else {
-            const num1 = Math.floor(Math.random() * 3) + 1;
-            const num2 = Math.floor(Math.random() * 3) + 1;
-            currentEquation = { ans: num1 + num2 };
-            if (eqBox) eqBox.innerText = "How many in total?";
-            if (visualBox) visualBox.innerText = `${randomIcon.repeat(num1)}  +  ${randomIcon.repeat(num2)}`;
+            // Class 3 & 4: Tables, Addition/Subtraction MCQ
+            if (visualBox) visualBox.style.display = 'none';
+            const ops = ['+', '-', '×'];
+            const op = ops[Math.floor(Math.random() * ops.length)];
+            let num1, num2, ans;
+
+            if (op === '×') {
+                num1 = Math.floor(Math.random() * 9) + 2;
+                num2 = Math.floor(Math.random() * 9) + 1;
+                ans = num1 * num2;
+            } else {
+                num1 = Math.floor(Math.random() * 30) + 10;
+                num2 = Math.floor(Math.random() * 20) + 1;
+                if (op === '-' && num1 < num2) [num1, num2] = [num2, num1];
+                ans = op === '+' ? num1 + num2 : num1 - num2;
+            }
+            currentEquation = { ans };
+            if (eqBox) eqBox.innerText = `${num1} ${op} ${num2} = ?`;
         }
 
         renderMCQOptions(currentEquation.ans);
 
-    } else if (isPrimary12) {
-        // --- ✏️ CLASS 1 & 2: SIMPLE MCQ ARITHMETIC ---
-        if (directInputArea) directInputArea.style.display = 'none';
-        if (visualBox) visualBox.style.display = 'none';
-        if (mcqContainer) mcqContainer.style.display = 'grid';
-
-        let num1 = Math.floor(Math.random() * 10) + 1;
-        let num2 = Math.floor(Math.random() * 10) + 1;
-        const op = Math.random() > 0.5 ? '+' : '-';
-        
-        if (op === '-' && num1 < num2) [num1, num2] = [num2, num1];
-        const ans = op === '+' ? num1 + num2 : num1 - num2;
-
-        currentEquation = { ans };
-        if (eqBox) eqBox.innerText = `${num1} ${op} ${num2} = ?`;
-
-        renderMCQOptions(ans);
-
     } else {
-        // --- 🎒 CLASS 3 TO CLASS 8: DIRECT INPUT ARITHMETIC ---
+        // --- CATEGORY B: CLASS 5 TO CLASS 8 (DIRECT INPUT MODE WITH INSTANT AUTO-NEXT) ---
         if (visualBox) visualBox.style.display = 'none';
         if (mcqContainer) mcqContainer.style.display = 'none';
         if (directInputArea) directInputArea.style.display = 'flex';
 
         let num1, num2, op = '+', ans;
 
-        if (studentClass.includes('3') || studentClass.includes('4')) {
-            const ops = ['+', '-', '×'];
-            op = ops[Math.floor(Math.random() * ops.length)];
-            if (op === '×') {
-                num1 = Math.floor(Math.random() * 9) + 2;
-                num2 = Math.floor(Math.random() * 9) + 1;
-                ans = num1 * num2;
-            } else {
-                num1 = Math.floor(Math.random() * 40) + 10;
-                num2 = Math.floor(Math.random() * 30) + 1;
-                if (op === '-' && num1 < num2) [num1, num2] = [num2, num1];
-                ans = op === '+' ? num1 + num2 : num1 - num2;
-            }
-
-        } else if (studentClass.includes('5') || studentClass.includes('6')) {
+        if (studentClass.includes('5') || studentClass.includes('6')) {
             const ops = ['+', '-', '×', '÷'];
             op = ops[Math.floor(Math.random() * ops.length)];
             if (op === '÷') {
@@ -278,31 +287,25 @@ function generateEquationByGrade() {
                 if (op === '-' && num1 < num2) [num1, num2] = [num2, num1];
                 ans = op === '+' ? num1 + num2 : num1 - num2;
             }
+            if (eqBox) eqBox.innerText = `${num1} ${op} ${num2} = ?`;
 
-        } else { // Class 7 & Class 8 (Integers & Squares)
+        } else { // Class 7 & Class 8 (Integers, Squares, Mixed Division)
             const type = Math.floor(Math.random() * 3);
-            if (type === 0) { // Square Root / Square
+            if (type === 0) {
                 const base = Math.floor(Math.random() * 10) + 2;
                 ans = base * base;
-                eqBox.innerText = `${base}² = ?`;
-                op = 'square';
-            } else if (type === 1) { // Negative Integer Multiplication
+                if (eqBox) eqBox.innerText = `${base}² = ?`;
+            } else if (type === 1) {
                 num1 = (Math.floor(Math.random() * 8) + 1) * -1;
                 num2 = Math.floor(Math.random() * 8) + 1;
                 ans = num1 * num2;
-                eqBox.innerText = `(${num1}) × ${num2} = ?`;
-                op = 'integer';
-            } else { // Mixed Division
+                if (eqBox) eqBox.innerText = `(${num1}) × ${num2} = ?`;
+            } else {
                 num2 = Math.floor(Math.random() * 12) + 2;
                 ans = Math.floor(Math.random() * 12) + 1;
                 num1 = num2 * ans;
-                eqBox.innerText = `${num1} ÷ ${num2} = ?`;
-                op = '÷';
+                if (eqBox) eqBox.innerText = `${num1} ÷ ${num2} = ?`;
             }
-        }
-
-        if (op !== 'square' && op !== 'integer') {
-            if (eqBox) eqBox.innerText = `${num1} ${op} ${num2} = ?`;
         }
 
         currentEquation = { ans };
@@ -310,12 +313,13 @@ function generateEquationByGrade() {
         const inputField = document.getElementById('user-answer');
         if (inputField) {
             inputField.value = '';
+            inputField.style.borderColor = '#334155';
             inputField.focus();
         }
     }
 }
 
-// Generate 4 Unique Options for MCQ
+// Generate 4 Unique MCQ Options
 function renderMCQOptions(correctAns) {
     const mcqContainer = document.getElementById('mcq-options-container');
     if (!mcqContainer) return;
@@ -339,26 +343,47 @@ function renderMCQOptions(correctAns) {
     });
 }
 
-// Answer Handlers
+// MCQ Tap Handler (PG to Class 4 with Floor-at-Zero Negative Marking)
 function handleMCQAnswer(selectedVal) {
+    const scoreElem = document.getElementById('game-score');
+
     if (selectedVal === currentEquation.ans) {
+        // Correct Answer -> +10 Marks
         score += 10;
-        const scoreElem = document.getElementById('game-score');
-        if (scoreElem) scoreElem.innerText = score;
+        if (scoreElem) scoreElem.style.color = '#10b981'; // Green flash
+    } else {
+        // Wrong Answer -> -5 Marks (Min Limit = 0)
+        score = Math.max(0, score - 5);
+        if (scoreElem) scoreElem.style.color = '#f87171'; // Red flash
     }
+
+    if (scoreElem) {
+        scoreElem.innerText = score;
+        setTimeout(() => { scoreElem.style.color = '#fff'; }, 300);
+    }
+
     generateEquationByGrade();
 }
 
-function checkAnswerDirect() {
+// ⚡ Class 5 to 8 Instant Auto-Next Typing Handler
+function checkAnswerLive() {
     const inputField = document.getElementById('user-answer');
-    if (!inputField) return;
+    if (!inputField || inputField.value === '') return;
+
     const userAns = parseInt(inputField.value);
+
+    // Instant match check!
     if (!isNaN(userAns) && userAns === currentEquation.ans) {
         score += 10;
         const scoreElem = document.getElementById('game-score');
         if (scoreElem) scoreElem.innerText = score;
+
+        inputField.style.borderColor = '#10b981'; // Green flash
+        
+        setTimeout(() => {
+            generateEquationByGrade(); // Instant Next Question!
+        }, 120);
     }
-    generateEquationByGrade();
 }
 
 // 🏁 6. END GAME & SYNC
