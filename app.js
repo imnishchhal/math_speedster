@@ -1,6 +1,6 @@
-// app.js (GAME ENGINE v2.0 - PERSISTENT SESSION & GLOBAL TOPPER)
+// app.js (GAME ENGINE v3.0 - STABLE BUNDLE)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, doc, collection, getDocs, query, where, setDoc, getDoc, updateDoc, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, collection, getDocs, query, where, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
     authDomain: "math-speedster.firebaseapp.com",
@@ -36,14 +36,16 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (activeParentPhone) {
         loadStudentProfiles(activeParentPhone);
     } else {
-        authScreen.style.display = 'block';
+        if (authScreen) authScreen.style.display = 'block';
     }
 
     setupEventListeners();
 });
 
-// 👑 SAFE GLOBAL TOPPER FETCH (No Stream/Query Lock Errors)
+// 👑 SAFE GLOBAL TOPPER FETCH
 async function fetchGlobalTopper() {
+    if (!globalTopperBadge) return;
+
     try {
         const querySnapshot = await getDocs(collection(db, "students"));
 
@@ -53,9 +55,9 @@ async function fetchGlobalTopper() {
 
             querySnapshot.forEach((docSnap) => {
                 const data = docSnap.data();
-                const score = parseInt(data.highScore) || 0;
-                if (score > maxScore) {
-                    maxScore = score;
+                const scoreVal = parseInt(data.highScore) || 0;
+                if (scoreVal > maxScore) {
+                    maxScore = scoreVal;
                     topStudent = data;
                 }
             });
@@ -75,9 +77,9 @@ async function fetchGlobalTopper() {
         globalTopperBadge.innerHTML = `👑 <b>Topper:</b> Math Speedster Arena 🚀`;
     }
 }
+
 // 🔐 2. AUTH & SESSION LOGIC
 function setupEventListeners() {
-    // Auth Form
     const authForm = document.getElementById('mobile-auth-form');
     if (authForm) {
         authForm.addEventListener('submit', async (e) => {
@@ -91,7 +93,6 @@ function setupEventListeners() {
         });
     }
 
-    // Switch User Button
     if (btnSwitchUser) {
         btnSwitchUser.addEventListener('click', () => {
             localStorage.removeItem('ms_parent_phone');
@@ -100,26 +101,26 @@ function setupEventListeners() {
         });
     }
 
-    // Submit Answer
     document.getElementById('btn-submit-ans')?.addEventListener('click', checkAnswer);
     document.getElementById('user-answer')?.addEventListener('keyup', (e) => {
         if (e.key === 'Enter') checkAnswer();
     });
 
-    // Play Again Button (Direct Restart - No Phone Prompt!)
     document.getElementById('btn-play-again')?.addEventListener('click', () => {
-        gameOverScreen.style.display = 'none';
+        if (gameOverScreen) gameOverScreen.style.display = 'none';
         showGameArena();
     });
 }
 
 // 👨‍👩‍👧 3. LOAD STUDENT PROFILES
 async function loadStudentProfiles(phone) {
-    authScreen.style.display = 'none';
-    studentSelectScreen.style.display = 'block';
-    btnSwitchUser.style.display = 'inline-block';
+    if (authScreen) authScreen.style.display = 'none';
+    if (studentSelectScreen) studentSelectScreen.style.display = 'block';
+    if (btnSwitchUser) btnSwitchUser.style.display = 'inline-block';
 
     const studentListContainer = document.getElementById('student-list');
+    if (!studentListContainer) return;
+    
     studentListContainer.innerHTML = 'Loading students...';
 
     try {
@@ -127,52 +128,56 @@ async function loadStudentProfiles(phone) {
         const snapshot = await getDocs(q);
 
         if (snapshot.empty) {
-            studentListContainer.innerHTML = '<p>No student profile found for this phone number. Please contact your field agent.</p>';
+            studentListContainer.innerHTML = '<p style="color: #f87171;">No student profile found for this number. Please contact your field agent.</p>';
             return;
         }
 
         let html = '';
         snapshot.forEach((docSnap) => {
             const s = docSnap.data();
+            const studentClass = s.class || 'N/A';
             html += `
-                <div class="profile-card" onclick="selectStudent('${s.id}', '${s.name}', ${s.highScore || 0})">
+                <div class="profile-card" onclick="selectStudent('${s.id}', '${s.name}', '${studentClass}', ${s.highScore || 0})">
                     <h3>${s.name}</h3>
-                    <p>Class: ${s.class} | High Score: ${s.highScore || 0}</p>
+                    <p>Class: ${studentClass} | High Score: ${s.highScore || 0}</p>
                 </div>`;
         });
         studentListContainer.innerHTML = html;
     } catch (err) {
-        studentListContainer.innerHTML = 'Failed to load profiles.';
+        studentListContainer.innerHTML = '<p style="color: #f87171;">Failed to load profiles.</p>';
     }
 }
 
-// Global scope attachment for onclick event
-window.selectStudent = (id, name, highScore) => {
-    activeStudent = { id, name, highScore };
+// Fixed: Preserving 'class' attribute in activeStudent session
+window.selectStudent = (id, name, studentClass, highScore) => {
+    activeStudent = { id, name, class: studentClass, highScore };
     localStorage.setItem('ms_active_student', JSON.stringify(activeStudent));
-    studentSelectScreen.style.display = 'none';
+    if (studentSelectScreen) studentSelectScreen.style.display = 'none';
     showGameArena();
 };
 
 // 🎮 4. GAME ENGINE & TIMER
 function showGameArena() {
-    authScreen.style.display = 'none';
-    studentSelectScreen.style.display = 'none';
-    gameOverScreen.style.display = 'none';
-    gameArena.style.display = 'block';
-    btnSwitchUser.style.display = 'inline-block';
+    if (authScreen) authScreen.style.display = 'none';
+    if (studentSelectScreen) studentSelectScreen.style.display = 'none';
+    if (gameOverScreen) gameOverScreen.style.display = 'none';
+    if (gameArena) gameArena.style.display = 'block';
+    if (btnSwitchUser) btnSwitchUser.style.display = 'inline-block';
 
     score = 0;
     timeLeft = 30;
-    document.getElementById('game-score').innerText = score;
-    document.getElementById('game-timer').innerText = timeLeft;
+    
+    const scoreElem = document.getElementById('game-score');
+    const timerElem = document.getElementById('game-timer');
+    if (scoreElem) scoreElem.innerText = score;
+    if (timerElem) timerElem.innerText = timeLeft;
 
     generateEquation();
     
     clearInterval(timerInterval);
     timerInterval = setInterval(() => {
         timeLeft--;
-        document.getElementById('game-timer').innerText = timeLeft;
+        if (timerElem) timerElem.innerText = timeLeft;
         if (timeLeft <= 0) {
             endGame();
         }
@@ -183,17 +188,26 @@ function generateEquation() {
     const num1 = Math.floor(Math.random() * 10) + 1;
     const num2 = Math.floor(Math.random() * 10) + 1;
     currentEquation = { num1, num2, ans: num1 + num2 };
-    document.getElementById('equation-box').innerText = `${num1} + ${num2} = ?`;
+    
+    const eqBox = document.getElementById('equation-box');
+    if (eqBox) eqBox.innerText = `${num1} + ${num2} = ?`;
+    
     const inputField = document.getElementById('user-answer');
-    inputField.value = '';
-    inputField.focus();
+    if (inputField) {
+        inputField.value = '';
+        inputField.focus();
+    }
 }
 
 function checkAnswer() {
-    const userAns = parseInt(document.getElementById('user-answer').value);
-    if (userAns === currentEquation.ans) {
+    const inputField = document.getElementById('user-answer');
+    if (!inputField) return;
+
+    const userAns = parseInt(inputField.value);
+    if (!isNaN(userAns) && userAns === currentEquation.ans) {
         score += 10;
-        document.getElementById('game-score').innerText = score;
+        const scoreElem = document.getElementById('game-score');
+        if (scoreElem) scoreElem.innerText = score;
     }
     generateEquation();
 }
@@ -201,37 +215,38 @@ function checkAnswer() {
 // 🏁 5. END GAME & HIGH SCORE SYNC
 async function endGame() {
     clearInterval(timerInterval);
-    gameArena.style.display = 'none';
-    gameOverScreen.style.display = 'block';
+    if (gameArena) gameArena.style.display = 'none';
+    if (gameOverScreen) gameOverScreen.style.display = 'block';
 
-    document.getElementById('final-score').innerText = score;
+    const finalScoreElem = document.getElementById('final-score');
+    if (finalScoreElem) finalScoreElem.innerText = score;
 
-    let isNewHighScore = false;
-    if (score > (activeStudent.highScore || 0)) {
+    if (activeStudent && score > (activeStudent.highScore || 0)) {
         activeStudent.highScore = score;
         localStorage.setItem('ms_active_student', JSON.stringify(activeStudent));
-        isNewHighScore = true;
     }
 
-    document.getElementById('personal-high-score').innerText = activeStudent.highScore;
+    const personalHighElem = document.getElementById('personal-high-score');
+    if (personalHighElem) personalHighElem.innerText = activeStudent?.highScore || score;
 
     // Update Firestore
-    try {
-        const studentRef = doc(db, "students", activeStudent.id);
-        const studentSnap = await getDoc(studentRef);
-        if (studentSnap.exists()) {
-            const currentData = studentSnap.data();
-            const gamesCompleted = (currentData.gamesCompleted || 0) + 1;
+    if (activeStudent?.id) {
+        try {
+            const studentRef = doc(db, "students", activeStudent.id);
+            const studentSnap = await getDoc(studentRef);
+            if (studentSnap.exists()) {
+                const currentData = studentSnap.data();
+                const gamesCompleted = (currentData.gamesCompleted || 0) + 1;
 
-            await updateDoc(studentRef, {
-                lastScore: score,
-                highScore: Math.max(score, currentData.highScore || 0),
-                gamesCompleted: gamesCompleted
-            });
+                await updateDoc(studentRef, {
+                    lastScore: score,
+                    highScore: Math.max(score, currentData.highScore || 0),
+                    gamesCompleted: gamesCompleted
+                });
+            }
+            fetchGlobalTopper();
+        } catch (err) {
+            console.error("Score sync error:", err);
         }
-        // Refresh topper in case this student broke the global record
-        fetchGlobalTopper();
-    } catch (err) {
-        console.error("Score sync error:", err);
     }
 }
