@@ -43,6 +43,9 @@
         .input-area { display: flex; gap: 10px; }
         .input-area input { margin-bottom: 0; font-size: 1.5rem; font-weight: 700; }
         .input-area button { width: auto; padding: 0 20px; }
+        .mcq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+.mcq-btn { background: #1e293b; border: 2px solid #334155; border-radius: 12px; color: #fff; font-size: 1.5rem; font-weight: 700; padding: 15px; cursor: pointer; transition: all 0.2s ease; }
+.mcq-btn:active { transform: scale(0.95); background: #0284c7; border-color: #38bdf8; }
     </style>
 </head>
 <body>
@@ -73,20 +76,27 @@
         </div>
 
         <!-- Main Game Arena -->
-        <div id="game-arena" class="card-panel" style="display: none;">
-            <div class="game-header">
-                <div>⏳ Time: <span id="game-timer">30</span>s</div>
-                <div>⭐ Score: <span id="game-score">0</span></div>
-            </div>
-            
-            <div id="equation-box" class="equation-display">? + ?</div>
-            
-            <div class="input-area">
-                <input type="number" id="user-answer" placeholder="Ans" autofocus autocomplete="off">
-                <button id="btn-submit-ans" class="btn btn-primary">Go</button>
-            </div>
-        </div>
+<div id="game-arena" class="card-panel" style="display: none;">
+    <div class="game-header">
+        <div>⏳ Time: <span id="game-timer">30</span>s</div>
+        <div>⭐ Score: <span id="game-score">0</span></div>
+    </div>
+    
+    <!-- Dynamic Question Title / Equation -->
+    <div id="equation-box" class="equation-display">? + ?</div>
+    
+    <!-- 🖼️ Visual Image Container (For PG - UKG) -->
+    <div id="visual-image-box" style="display: none; font-size: 2.5rem; margin: 15px 0; word-break: break-all;"></div>
+    
+    <!-- 🔘 MCQ Options Container (For PG - UKG) -->
+    <div id="mcq-options-container" class="mcq-grid" style="display: none;"></div>
 
+    <!-- ⌨️ Direct Input Area (For Class 1 - 8) -->
+    <div id="direct-input-area" class="input-area" style="display: none;">
+        <input type="number" id="user-answer" placeholder="Ans" autofocus autocomplete="off">
+        <button id="btn-submit-ans" class="btn btn-primary">Go</button>
+    </div>
+</div>
         <!-- Game Over Screen -->
         <div id="game-over-screen" class="card-panel" style="display: none;">
             <h2>🎉 Time's Up!</h2>
