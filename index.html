@@ -4,7 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Math Speedster - Speed Arithmetic Game</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+        body { background-color: #0b0f19; color: #f1f5f9; min-height: 100vh; padding: 15px; display: flex; justify-content: center; align-items: center; }
+        
+        .game-container { width: 100%; max-width: 480px; margin: 0 auto; }
+        
+        /* 🏆 Top Bar & Topper Badge */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 10px 15px; margin-bottom: 15px; }
+        .topper-badge { font-size: 0.85rem; font-weight: 600; color: #f8fafc; }
+        .btn-text-small { background: transparent; border: none; color: #38bdf8; font-size: 0.75rem; font-weight: 600; cursor: pointer; text-decoration: underline; }
+
+        /* Card Panels */
+        .card-panel { background: #111827; border: 1px solid #1e293b; border-radius: 16px; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4); text-align: center; }
+        
+        h1 { font-size: 1.8rem; color: #f8fafc; font-weight: 700; margin-bottom: 5px; }
+        h2 { font-size: 1.4rem; color: #f8fafc; margin-bottom: 15px; }
+        p.subtitle { color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px; }
+
+        /* Form Controls */
+        input[type="tel"], input[type="number"] { width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 12px; color: #fff; font-size: 1.1rem; text-align: center; outline: none; margin-bottom: 15px; }
+        input:focus { border-color: #38bdf8; }
+
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 20px; font-size: 1rem; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; width: 100%; }
+        .btn-primary { background: #0284c7; color: #fff; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3); }
+
+        /* Profile Selection */
+        .profile-list { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .profile-card { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.2s; text-align: left; }
+        .profile-card:hover { border-color: #38bdf8; background: #1e293b; }
+        .profile-card h3 { font-size: 1.1rem; color: #f8fafc; margin-bottom: 3px; }
+        .profile-card p { font-size: 0.8rem; color: #94a3b8; }
+
+        /* Game Arena Elements */
+        .game-header { display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 700; color: #38bdf8; margin-bottom: 20px; background: #0f172a; padding: 10px 15px; border-radius: 10px; border: 1px solid #1e293b; }
+        .equation-display { font-size: 2.5rem; font-weight: 800; color: #f8fafc; letter-spacing: 2px; margin: 25px 0; background: #0f172a; padding: 20px; border-radius: 12px; border: 1px solid #1e293b; }
+        
+        .input-area { display: flex; gap: 10px; }
+        .input-area input { margin-bottom: 0; font-size: 1.5rem; font-weight: 700; }
+        .input-area button { width: auto; padding: 0 20px; }
+    </style>
 </head>
 <body>
 
@@ -12,9 +51,9 @@
         <!-- 🏆 TOP BAR: Leaderboard Topper Display -->
         <header class="top-bar">
             <div id="global-topper-badge" class="topper-badge">
-                👑 All-Time Topper: Loading...
+                👑 Topper: Loading...
             </div>
-            <button id="btn-switch-user" class="btn-text-small" style="display: none;">🔄 Switch User</button>
+            <button id="btn-switch-user" class="btn-text-small" style="display: none;">🔄 Switch</button>
         </header>
 
         <!-- Mobile Authentication Screen -->
@@ -23,7 +62,7 @@
             <p class="subtitle">Enter WhatsApp number to start playing</p>
             <form id="mobile-auth-form">
                 <input type="tel" id="user-mobile" placeholder="10-digit WhatsApp Number" pattern="[0-9]{10}" required>
-                <button type="submit" class="btn btn-primary">Verify & Play</button>
+                <button type="submit" class="btn btn-primary">Verify & Play 🎮</button>
             </form>
         </div>
 
@@ -36,27 +75,28 @@
         <!-- Main Game Arena -->
         <div id="game-arena" class="card-panel" style="display: none;">
             <div class="game-header">
-                <div>Timer: <span id="game-timer">30</span>s</div>
-                <div>Score: <span id="game-score">0</span></div>
+                <div>⏳ Time: <span id="game-timer">30</span>s</div>
+                <div>⭐ Score: <span id="game-score">0</span></div>
             </div>
             
             <div id="equation-box" class="equation-display">? + ?</div>
             
             <div class="input-area">
                 <input type="number" id="user-answer" placeholder="Ans" autofocus autocomplete="off">
-                <button id="btn-submit-ans" class="btn btn-primary">Submit</button>
+                <button id="btn-submit-ans" class="btn btn-primary">Go</button>
             </div>
         </div>
 
         <!-- Game Over Screen -->
         <div id="game-over-screen" class="card-panel" style="display: none;">
-            <h2>🎉 Game Over!</h2>
-            <p>Your Score: <span id="final-score">0</span></p>
-            <p>Personal Best: <span id="personal-high-score">0</span></p>
-            <button id="btn-play-again" class="btn btn-primary">Play Again 🔄</button>
+            <h2>🎉 Time's Up!</h2>
+            <p class="subtitle" style="margin-bottom: 10px;">Your Score: <b id="final-score" style="color: #38bdf8; font-size: 1.4rem;">0</b></p>
+            <p class="subtitle">Personal Best: <b id="personal-high-score" style="color: #10b981;">0</b></p>
+            <button id="btn-play-again" class="btn btn-primary" style="margin-top: 15px;">Play Again 🔄</button>
         </div>
     </div>
 
+    <!-- JavaScript Game Engine Linker -->
     <script type="module" src="app.js?v=2.0"></script>
 </body>
 </html>
