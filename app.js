@@ -1,6 +1,6 @@
-// app.js - SIMPLE CONNECTION TEST
+// app.js - DIAGNOSTIC DATA CHECK
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { initializeFirestore, memoryLocalCache, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
     authDomain: "math-speedster.firebaseapp.com",
@@ -9,30 +9,37 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
-async function testFirebaseConnection() {
-    console.log("⚡ Testing connection to Cloud Firestore...");
+// Memory cache to bypass persistent stream lock errors
+const db = initializeFirestore(app, {
+    localCache: memoryLocalCache()
+});
+
+async function inspectCollections() {
+    console.log("🔍 Inspecting Firestore database...");
     
-    const topperBadge = document.getElementById('global-topper-badge');
-    if (topperBadge) topperBadge.innerText = "⏳ Testing Database Connection...";
-
     try {
         const querySnapshot = await getDocs(collection(db, "students"));
+        console.log(`📊 Documents found in 'students' collection: ${querySnapshot.size}`);
         
-        console.log(`✅ SUCCESS! Connected to Firebase. Total student records found: ${querySnapshot.size}`);
-        if (topperBadge) {
-            topperBadge.innerHTML = `✅ <b>Firebase Connected!</b> Records: ${querySnapshot.size}`;
-            topperBadge.style.color = "#10b981"; // Green
+        if (querySnapshot.size > 0) {
+            querySnapshot.forEach((doc) => {
+                console.log("📄 Student Record:", doc.id, doc.data());
+            });
+        } else {
+            console.warn("⚠️ 'students' collection is returning 0 docs. Adding a test record...");
+            // Test entry write check
+            await setDoc(doc(db, "students", "test_student_1"), {
+                name: "Test Child",
+                class: "UKG",
+                highScore: 50,
+                parentId: "9999999999"
+            });
+            console.log("✅ Test record written successfully to 'students' collection!");
         }
-    } catch (error) {
-        console.error("❌ CONNECTION FAILED!", error);
-        if (topperBadge) {
-            topperBadge.innerHTML = `❌ <b>Failed:</b> ${error.code} - ${error.message}`;
-            topperBadge.style.color = "#f87171"; // Red
-        }
+    } catch (err) {
+        console.error("❌ Inspection Error:", err);
     }
 }
 
-// Run test on load
-document.addEventListener('DOMContentLoaded', testFirebaseConnection);
+document.addEventListener('DOMContentLoaded', inspectCollections);
