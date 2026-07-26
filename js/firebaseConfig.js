@@ -3,12 +3,13 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyD2j024emoJTfqfqjRcybS8Ip59qzx5cSs",
+  authDomain: "math-speed-web.firebaseapp.com",
+  projectId: "math-speed-web",
+  storageBucket: "math-speed-web.firebasestorage.app",
+  messagingSenderId: "601738228699",
+  appId: "1:601738228699:web:741dafc734dd2afb4a2dfe",
+  measurementId: "G-PZYC6KSHK2"
 };
 
 const app = initializeApp(firebaseConfig);
